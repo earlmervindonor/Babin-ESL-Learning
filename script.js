@@ -2,70 +2,100 @@ const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSLCn5weZR17UsA
 
 let quizData = [];
 let dialogue = [];
+let normalTexts = []; 
+let voices = [];
 let currentQuestion = 0;
 let score = 0;
-let voices = [];
 let currentLine = 0;
 
-// ================= 1. FETCH & POWER PARSER =================
+// ================= 1. FETCH & PARSE =================
 async function loadData() {
     try {
         const response = await fetch(CSV_URL);
         const csvText = await response.text();
         parseCSV(csvText);
         
+        // Show sections if data exists
+        if (normalTexts.length > 0) renderNormalText();
+        if (dialogue.length > 0) {
+            setupSpeakerControls(); 
+            renderDialogue();
+        }
         if (quizData.length > 0) loadQuestion();
-        if (dialogue.length > 0) renderDialogue();
+        
     } catch (e) {
         console.error("Connection Error:", e);
     }
 }
 
 function parseCSV(text) {
-    quizData = [];
-    dialogue = [];
-
-    // This logic handles line breaks and commas perfectly
     const rows = text.split(/\r?\n/);
-    
     rows.forEach((row, index) => {
         if (index === 0 || !row.trim()) return;
-
-        // NEW: This regex is much stronger for "complete text"
-        // It captures everything between commas, even if it contains symbols
+        
+        // Powerful regex to handle commas inside quotes
         const cols = row.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g) || [];
         const cleanCols = cols.map(c => c.replace(/^"|"$/g, '').trim());
 
-        if (cleanCols.length < 2) return;
+        const type = cleanCols[0]?.toUpperCase();
 
-        const type = cleanCols[0].toUpperCase();
-
-        if (type === "QUIZ") {
+        if (type === "TEXT") {
+            normalTexts.push({ title: cleanCols[1], body: cleanCols[2] });
+        } else if (type === "QUIZ") {
             quizData.push({
                 question: cleanCols[1],
                 choices: [cleanCols[2], cleanCols[3], cleanCols[4], cleanCols[5]],
                 correct: parseInt(cleanCols[6]) || 0
             });
         } else if (type === "DIALOGUE") {
-            // This will push EVERY line found in the sheet into the array
-            dialogue.push({
-                speaker: cleanCols[1],
-                text: cleanCols[2]
-            });
+            dialogue.push({ speaker: cleanCols[1], text: cleanCols[2] });
         }
     });
 }
 
-// ================= 2. DIALOGUE (Multi-Line Support) =================
+// ================= 2. TEXT RENDERER =================
+function renderNormalText() {
+    const section = document.getElementById("text-section");
+    const container = document.getElementById("text-container");
+    section.style.display = "block"; // Show the card
+    container.innerHTML = "";
+
+    normalTexts.forEach(item => {
+        const div = document.createElement("div");
+        div.style.marginBottom = "20px";
+        div.innerHTML = `<h2 style="color:#007bff;">${item.title}</h2><p style="font-size:1.1em; line-height:1.6;">${item.body}</p>`;
+        container.appendChild(div);
+    });
+}
+
+// ================= 3. DIALOGUE LOGIC =================
+function setupSpeakerControls() {
+    const container = document.getElementById("voice-controls-container");
+    container.innerHTML = "";
+    const uniqueSpeakers = [...new Set(dialogue.map(line => line.speaker))];
+
+    uniqueSpeakers.forEach((speaker, index) => {
+        const div = document.createElement("div");
+        div.style.marginBottom = "8px";
+        div.innerHTML = `<strong>${speaker}'s Voice: </strong> <select id="voice-for-${speaker}"></select>`;
+        container.appendChild(div);
+
+        const select = document.getElementById(`voice-for-${speaker}`);
+        voices.forEach((v, i) => select.add(new Option(v.name, i)));
+        
+        // Auto-select different voices for different people
+        if (index < voices.length) select.selectedIndex = index;
+    });
+}
+
 function renderDialogue() {
     const cont = document.getElementById("fullDialogue");
-    cont.innerHTML = ""; // Clear old data
-    
-    // This loops through EVERY dialogue entry found in your sheet
+    cont.innerHTML = "";
     dialogue.forEach((line, i) => {
         const d = document.createElement("div");
         d.id = `line-${i}`;
-        d.className = "dialogue-line";
+        d.style.padding = "10px";
+        d.style.borderRadius = "5px";
         d.innerHTML = `<strong>${line.speaker}:</strong> ${line.text}`;
         cont.appendChild(d);
     });
@@ -79,44 +109,39 @@ function playDialogue() {
 
 function speakLine() {
     if (currentLine >= dialogue.length) return;
-
     const line = dialogue[currentLine];
     const ut = new SpeechSynthesisUtterance(line.text);
     
-    // Voice Selection
-    const mIdx = document.getElementById("mikeVoice").value;
-    const jIdx = document.getElementById("johnVoice").value;
-    ut.voice = (line.speaker.toLowerCase().includes("mike")) ? voices[mIdx] : voices[jIdx];
+    const sel = document.getElementById(`voice-for-${line.speaker}`);
+    if (sel) ut.voice = voices[sel.value];
 
-    // Visual Highlight
-    document.querySelectorAll('.dialogue-line').forEach(el => el.style.background = "none");
-    const currentEl = document.getElementById(`line-${currentLine}`);
-    if (currentEl) currentEl.style.background = "#e3f2fd";
+    // Highlight line
+    dialogue.forEach((_, i) => {
+        document.getElementById(`line-${i}`).style.background = (i === currentLine) ? "#e3f2fd" : "none";
+    });
 
-    ut.onend = () => {
-        currentLine++;
-        speakLine();
-    };
+    ut.onend = () => { currentLine++; speakLine(); };
     speechSynthesis.speak(ut);
 }
 
-// ================= 3. QUIZ (Complete Text) =================
+// ================= 4. QUIZ LOGIC =================
 function loadQuestion() {
     const q = quizData[currentQuestion];
-    const qText = document.getElementById("question");
-    qText.textContent = q.question; // Displays the FULL question text
-    
+    document.getElementById("question").textContent = q.question;
     const div = document.getElementById("choices");
     div.innerHTML = "";
     
     q.choices.forEach((c, i) => {
-        if(!c) return; // Skip empty choices
+        if(!c) return;
         const btn = document.createElement("button");
         btn.textContent = c;
-        btn.className = "choice-btn";
+        btn.style.display = "block";
+        btn.style.width = "100%";
+        btn.style.margin = "5px 0";
+        btn.style.padding = "10px";
         btn.onclick = () => {
-            if(i === q.correct) alert("Excellent! ✨");
-            else alert("Keep trying! 💪");
+            if(i === q.correct) { alert("Correct! ✨"); score++; }
+            else { alert("Try again! 💪"); }
         };
         div.appendChild(btn);
     });
@@ -127,29 +152,19 @@ function nextQuestion() {
     if (currentQuestion < quizData.length) {
         loadQuestion();
     } else {
-        document.getElementById("quiz-container").innerHTML = `<h2>Quiz Complete!</h2><p>Refresh to try again.</p>`;
+        document.getElementById("quiz-container").innerHTML = `<h2>Quiz Finished!</h2><p>Your Score: ${score}</p>`;
     }
 }
 
-// ================= 4. INITIALIZATION =================
+// ================= 5. SYSTEM SETUP =================
 function loadVoices() {
     voices = speechSynthesis.getVoices().filter(v => v.lang.includes('en'));
-    const m = document.getElementById("mikeVoice");
-    const j = document.getElementById("johnVoice");
-    if (m && voices.length > 0) {
-        m.innerHTML = j.innerHTML = "";
-        voices.forEach((v, i) => {
-            m.add(new Option(v.name, i));
-            j.add(new Option(v.name, i));
-        });
-        if(voices.length > 1) j.selectedIndex = 1;
-    }
+    if (dialogue.length > 0) setupSpeakerControls();
 }
 
 function toggleRead() {
     speechSynthesis.cancel();
-    const ut = new SpeechSynthesisUtterance(document.getElementById("question").textContent);
-    speechSynthesis.speak(ut);
+    speechSynthesis.speak(new SpeechSynthesisUtterance(document.getElementById("question").textContent));
 }
 
 function stopDialogue() { speechSynthesis.cancel(); }
