@@ -27,11 +27,12 @@
             padding: 8px 12px;
             margin: 5px;
             cursor: pointer;
+            text-align: left;
         }
 
         #choices button {
             display: block;
-            width: 80%;
+            width: auto;
             margin: 8px auto;
         }
 
@@ -44,6 +45,7 @@
         hr {
             margin: 25px 0;
         }
+
 
 
 
