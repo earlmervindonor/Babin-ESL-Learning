@@ -15,6 +15,11 @@
         h2{
             text-align: left;
             padding: 5px;
+            font-style: italic;
+        }
+        p{
+            margin-left: 50px;
+            text-align: left;
         }
 
         button {
@@ -38,3 +43,4 @@
         hr {
             margin: 25px 0;
         }
+
