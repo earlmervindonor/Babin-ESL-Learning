@@ -1,9 +1,6 @@
         body {
             font-family: Arial;
             background: #f4f6f8;
-            text-align: center;
-            text-align: justify;
-     
         }
 
         .card {
@@ -22,6 +19,8 @@
         p{
             margin-left: 50px;
             text-align: left;
+            text-align: justify;
+            text-justify: inter-word;
         }
 
         button {
@@ -45,6 +44,7 @@
         hr {
             margin: 25px 0;
         }
+
 
 
 
