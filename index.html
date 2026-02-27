@@ -1,19 +1,25 @@
 <!DOCTYPE html>
 <html>
 <head>
-        <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css">
     <title>ESL Pro Tool</title>
 </head>
 <body>
 
+    <div class="card" id="text-section" style="display:none;">
+        <div id="text-container"></div>
+    </div>
+
     <div class="card">
         <h2>🎭 Dialogue Practice</h2>
-        <div style="margin-bottom:15px;">
-            <label>Mike:</label> <select id="mikeVoice"></select>
-            <label>John:</label> <select id="johnVoice"></select>
+        
+        <div id="voice-controls-container" style="margin-bottom: 15px;">
+            <p style="color: gray;">Loading speakers...</p>
         </div>
+
         <button class="primary" onclick="playDialogue()">▶ Play All</button>
         <button onclick="stopDialogue()">Stop</button>
+        
         <div id="fullDialogue" style="margin-top:20px;"></div>
     </div>
 
@@ -28,4 +34,3 @@
     <script src="script.js"></script>
 </body>
 </html>
-
