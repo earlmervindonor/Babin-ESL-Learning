@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+        <link rel="stylesheet" href="style.css">
+    <title>ESL Pro Tool</title>
+</head>
+<body>
+
+    <div class="card">
+        <h2>🎭 Dialogue Practice</h2>
+        <div style="margin-bottom:15px;">
+            <label>Mike:</label> <select id="mikeVoice"></select>
+            <label>John:</label> <select id="johnVoice"></select>
+        </div>
+        <button class="primary" onclick="playDialogue()">▶ Play All</button>
+        <button onclick="stopDialogue()">Stop</button>
+        <div id="fullDialogue" style="margin-top:20px;"></div>
+    </div>
+
+    <div class="card" id="quiz-container">
+        <h2>📝 Quiz Practice</h2>
+        <h3 id="question">Question loading...</h3>
+        <button onclick="toggleRead()">🔊 Listen</button>
+        <div id="choices"></div>
+        <button class="primary" onclick="nextQuestion()">Next Question →</button>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
