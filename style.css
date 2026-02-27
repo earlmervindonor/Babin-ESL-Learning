@@ -3,7 +3,7 @@
             background: #f4f6f8;
             text-align: center;
             text-align: justify;
-            text-justify: inter-word;
+     
         }
 
         .card {
@@ -45,5 +45,6 @@
         hr {
             margin: 25px 0;
         }
+
 
 
