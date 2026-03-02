@@ -2,17 +2,38 @@
 <html>
 <head>
     <link rel="stylesheet" href="style.css">
-    <title>ESL Pro Tool</title>
+    <title>Babin ESL</title>
 </head>
 <body>
 
     <div class="card" id="text-section" style="display:none;">
-        <div id="text-container"></div>
+        <div id="text-container">
+            <div class="card" id="text-section" style="display:none;">
+    <div style="text-align: center; margin-bottom: 20px;">
+        <img src="https://drive.google.com/uc?export=view&id=17ZGiOq-PRivPftXbquKzZhk3Ipuphq5z" 
+             alt="Lesson Image" 
+             style="max-width: 100%; border-radius: 10px; border: 1px solid #ddd; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+    </div>
+
+    <div id="text-container"></div>
+</div>
+        </div>
     </div>
 
     <div class="card">
-        <h2>🎭 Dialogue Practice</h2>
-        
+        <h2>Dialogue Practice 🎭</h2>
+        <div style="text-align: center; margin-bottom: 20px;">
+            <iframe 
+                width="550" 
+                height="560" 
+                src="https://www.youtube.com/embed/xe1LdOrCWgI" 
+                title="YouTube video player" 
+                frameborder="0" 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                allowfullscreen
+                style="border-radius: 15px; border: 2px solid #007bff;">
+            </iframe>
+        </div>
         <div id="voice-controls-container" style="margin-bottom: 15px;">
             <p style="color: gray;">Loading speakers...</p>
         </div>
@@ -24,7 +45,7 @@
     </div>
 
     <div class="card" id="quiz-container">
-        <h2>📝 Quiz Practice</h2>
+        <h2>Quiz Practice 📝</h2>
         <h3 id="question">Question loading...</h3>
         <button onclick="toggleRead()">🔊 Listen</button>
         <div id="choices"></div>
