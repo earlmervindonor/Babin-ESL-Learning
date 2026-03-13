@@ -29,7 +29,7 @@ async function loadData() {
 
 function parseCSV(text) {
     const rows = text.split(/\r?\n/);
-    quizData = []; // Clear current data
+    quizData = []; 
     rows.forEach((row, index) => {
         if (index === 0 || !row.trim()) return;
         
@@ -41,7 +41,6 @@ function parseCSV(text) {
         if (type === "TEXT") {
             normalTexts.push({ title: cleanCols[1], body: cleanCols[2] });
         } else if (type === "QUIZ") {
-            // Part 1: Multiple Choice
             quizData.push({
                 type: "MULTIPLE",
                 question: cleanCols[1],
@@ -49,7 +48,6 @@ function parseCSV(text) {
                 correct: parseInt(cleanCols[6]) || 0
             });
         } else if (type === "BLANKS") {
-            // Part 2: Fill in the Blanks
             quizData.push({
                 type: "BLANKS",
                 sentence: cleanCols[1],
@@ -65,6 +63,7 @@ function parseCSV(text) {
 function renderNormalText() {
     const section = document.getElementById("text-section");
     const container = document.getElementById("text-container");
+    if (!section) return;
     section.style.display = "block"; 
     container.innerHTML = "";
 
@@ -79,6 +78,7 @@ function renderNormalText() {
 // ================= 3. DIALOGUE LOGIC =================
 function setupSpeakerControls() {
     const container = document.getElementById("voice-controls-container");
+    if (!container) return;
     container.innerHTML = "";
     const uniqueSpeakers = [...new Set(dialogue.map(line => line.speaker))];
 
@@ -96,6 +96,7 @@ function setupSpeakerControls() {
 
 function renderDialogue() {
     const cont = document.getElementById("fullDialogue");
+    if (!cont) return;
     cont.innerHTML = "";
     dialogue.forEach((line, i) => {
         const d = document.createElement("div");
@@ -121,148 +122,206 @@ function speakLine() {
     if (sel) ut.voice = voices[sel.value];
 
     dialogue.forEach((_, i) => {
-        document.getElementById(`line-${i}`).style.background = (i === currentLine) ? "#e3f2fd" : "none";
+        const el = document.getElementById(`line-${i}`);
+        if(el) el.style.background = (i === currentLine) ? "#e3f2fd" : "none";
     });
 
     ut.onend = () => { currentLine++; speakLine(); };
     speechSynthesis.speak(ut);
 }
 
-// ================= 4. QUIZ LOGIC (MULTIPLE & BLANKS) =================
+// ================= 4. QUIZ LOGIC (SEPARATE CONTROLS) =================
+
 function loadQuestion() {
     const container = document.getElementById("quiz-list");
-    const submitBtn = document.getElementById("submit-btn");
-    const resetBtn = document.getElementById("reset-btn");
+    if (!container) return;
     
     container.innerHTML = ""; 
-    
-    quizData.forEach((q, qIndex) => {
-        const qDiv = document.createElement("div");
-        qDiv.className = "question-block";
-        qDiv.style.marginBottom = "25px";
-        qDiv.style.padding = "15px";
-        qDiv.style.borderBottom = "1px solid #eee";
 
-        if (q.type === "BLANKS") {
-            // Render Fill in the Blanks
-            const parts = q.sentence.split("___");
-            qDiv.innerHTML = `
-                <h4>${qIndex + 1}. Fill in the Blank:</h4>
-                <p style="font-size: 1.2em;">
-                    ${parts[0]} 
-                    <input type="text" id="blank-${qIndex}" class="blank-input"
-                        style="border: none; border-bottom: 2px solid #007bff; width: 140px; text-align: center; outline: none; font-size: 1em;"
-                        placeholder="..."> 
-                    ${parts[1] || ""}
-                </p>
-                <div id="fb-${qIndex}" style="font-weight: bold; margin-top: 5px;"></div>
-            `;
-        } else {
-            // Render Multiple Choice
-            qDiv.innerHTML = `<h4>${qIndex + 1}. ${q.question}</h4>`;
-            const choicesDiv = document.createElement("div");
-            q.choices.forEach((choice, cIndex) => {
-                if (!choice) return;
-                const label = document.createElement("label");
-                label.style.display = "block";
-                label.style.cursor = "pointer";
-                label.style.padding = "5px";
-                label.style.borderRadius = "4px";
-                label.id = `label-q${qIndex}-c${cIndex}`;
-                label.innerHTML = `<input type="radio" name="question${qIndex}" value="${cIndex}"> ${choice}`;
-                choicesDiv.appendChild(label);
-            });
-            qDiv.appendChild(choicesDiv);
-        }
-        container.appendChild(qDiv);
-    });
+    // --- PART 1: MULTIPLE CHOICE ---
+    const mcQuestions = quizData.filter(q => q.type === "MULTIPLE");
+    if (mcQuestions.length > 0) {
+        const part1Section = document.createElement("div");
+        part1Section.id = "part-1-section";
+        part1Section.innerHTML = `<h3 style="color: #007bff; border-bottom: 2px solid #007bff; padding-bottom: 5px;">Part I: Multiple Choice</h3>`;
+        
+        mcQuestions.forEach((q, i) => {
+            const realIdx = quizData.indexOf(q);
+            part1Section.appendChild(renderQuestionElement(q, realIdx, i + 1));
+        });
+        
+        const p1Controls = document.createElement("div");
+        p1Controls.style.cssText = "margin: 20px 0; display: flex; flex-direction: column; align-items: center;";
+        p1Controls.innerHTML = `
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button onclick="submitPart(1)" style="padding:10px 20px; background:#28a745; color:white; border:none; border-radius:5px; cursor:pointer;">Submit Part I</button>
+                <button onclick="resetPart(1)" style="padding:10px 20px; background:#6c757d; color:white; border:none; border-radius:5px; cursor:pointer;">Reset Part I</button>
+            </div>
+            <div id="quiz-result-1" style="margin-top:15px; font-weight:bold; text-align: center;"></div>
+        `;
+        part1Section.appendChild(p1Controls);
+        container.appendChild(part1Section);
+    }
 
-    if (quizData.length > 0) {
-        if (submitBtn) submitBtn.style.display = "inline-block";
-        if (resetBtn) resetBtn.style.display = "inline-block";
+    // --- PART 2: FILL IN THE BLANKS ---
+    const blankQuestions = quizData.filter(q => q.type === "BLANKS");
+    if (blankQuestions.length > 0) {
+        const part2Section = document.createElement("div");
+        part2Section.id = "part-2-section";
+        part2Section.style.marginTop = "50px";
+        part2Section.innerHTML = `<h3 style="color: #007bff; border-bottom: 2px solid #007bff; padding-bottom: 5px;">Part II: Fill in the Blanks</h3>`;
+
+        const bankDiv = document.createElement("div");
+        bankDiv.style.cssText = "background:#f1f8ff; border:2px solid #007bff; padding:15px; border-radius:10px; margin-bottom:20px; text-align:center;";
+        const words = blankQuestions.map(q => q.correctAnswer).sort(() => Math.random() - 0.5);
+        bankDiv.innerHTML = `<p style="margin-top:0; font-weight:bold; color:#007bff;">Word Bank</p>`;
+        
+        words.forEach((word) => {
+            const span = document.createElement("span");
+            span.innerText = word;
+            span.draggable = true;
+            span.style.cssText = "display:inline-block; margin:5px; padding:8px 15px; background:white; border:1px solid #007bff; border-radius:5px; cursor:grab; font-weight:bold; user-select:none;";
+            span.ondragstart = (e) => e.dataTransfer.setData("text", e.target.innerText);
+            bankDiv.appendChild(span);
+        });
+        part2Section.appendChild(bankDiv);
+
+        blankQuestions.forEach((q, i) => {
+            const realIdx = quizData.indexOf(q);
+            part2Section.appendChild(renderQuestionElement(q, realIdx, i + 1));
+        });
+        
+        const p2Controls = document.createElement("div");
+        p2Controls.style.cssText = "margin: 20px 0; display: flex; flex-direction: column; align-items: center;";
+        p2Controls.innerHTML = `
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button onclick="submitPart(2)" style="padding:10px 20px; background:#28a745; color:white; border:none; border-radius:5px; cursor:pointer;">Submit Part II</button>
+                <button onclick="resetPart(2)" style="padding:10px 20px; background:#6c757d; color:white; border:none; border-radius:5px; cursor:pointer;">Reset Part II</button>
+            </div>
+            <div id="quiz-result-2" style="margin-top:15px; font-weight:bold; text-align: center;"></div>
+        `;
+        part2Section.appendChild(p2Controls);
+        container.appendChild(part2Section);
     }
 }
 
-function submitQuiz() {
-    let finalScore = 0;
-    const resultDiv = document.getElementById("quiz-result");
+function renderQuestionElement(q, realIndex, displayNum) {
+    const qDiv = document.createElement("div");
+    qDiv.className = "question-block";
+    qDiv.style.cssText = "margin-bottom:20px; padding:15px; border-bottom:1px solid #eee;";
 
+    if (q.type === "BLANKS") {
+        const parts = q.sentence.split("___");
+        qDiv.innerHTML = `
+            <p style="font-size:1.15em;">
+                <strong>${displayNum}.</strong> ${parts[0]} 
+                <input type="text" id="blank-${realIndex}" class="part2-input" 
+                    style="border:none; border-bottom:2px solid #007bff; width:140px; text-align:center; font-size:1em; outline:none; background:#fffdec; border-radius:4px;" 
+                    placeholder="" readonly> 
+                ${parts[1] || ""}
+            </p>
+            <div id="fb-${realIndex}" class="part2-feedback" style="font-weight:bold; margin-top:5px;"></div>
+        `;
+        const input = qDiv.querySelector('.part2-input');
+        input.ondragover = (e) => e.preventDefault();
+        input.ondrop = (e) => {
+            e.preventDefault();
+            e.target.value = e.dataTransfer.getData("text");
+            e.target.style.background = "#e3f2fd";
+        };
+    } else {
+        qDiv.innerHTML = `<h4>${displayNum}. ${q.question}</h4>`;
+        const choicesDiv = document.createElement("div");
+        q.choices.forEach((choice, cIndex) => {
+            if (!choice) return;
+            const label = document.createElement("label");
+            label.className = "part1-label";
+            label.style.cssText = "display:block; cursor:pointer; padding:5px; border-radius:4px;";
+            label.id = `label-q${realIndex}-c${cIndex}`;
+            label.innerHTML = `<input type="radio" name="question${realIndex}" value="${cIndex}"> ${choice}`;
+            choicesDiv.appendChild(label);
+        });
+        qDiv.appendChild(choicesDiv);
+    }
+    return qDiv;
+}
+
+// ================= 5. SEPARATE SUBMIT/RESET LOGIC =================
+
+function submitPart(partNum) {
+    let partScore = 0;
+    let totalInPart = 0;
+    const typeToFilter = (partNum === 1) ? "MULTIPLE" : "BLANKS";
+    const resultDiv = document.getElementById(`quiz-result-${partNum}`);
+    
     quizData.forEach((q, qIndex) => {
+        if (q.type !== typeToFilter) return;
+        totalInPart++;
+
         if (q.type === "BLANKS") {
             const input = document.getElementById(`blank-${qIndex}`);
             const fb = document.getElementById(`fb-${qIndex}`);
+            if (!input) return;
             const userAns = input.value.toLowerCase().trim();
-
             if (userAns === q.correctAnswer) {
-                finalScore++;
-                input.style.color = "#28a745";
-                input.style.borderBottomColor = "#28a745";
-                fb.innerHTML = "Correct! ✨";
-                fb.style.color = "#28a745";
+                partScore++;
+                input.style.color = "#28a745"; fb.innerHTML = "Correct! ✨"; fb.style.color = "#28a745";
             } else {
-                input.style.color = "#dc3545";
-                input.style.borderBottomColor = "#dc3545";
-                fb.innerHTML = `Wrong. Answer: ${q.correctAnswer}`;
-                fb.style.color = "#dc3545";
+                input.style.color = "#dc3545"; fb.innerHTML = `Wrong. Answer: ${q.correctAnswer}`; fb.style.color = "#dc3545";
             }
         } else {
             const selected = document.querySelector(`input[name="question${qIndex}"]:checked`);
-            
-            q.choices.forEach((_, cIndex) => {
-                const lbl = document.getElementById(`label-q${qIndex}-c${cIndex}`);
-                if (lbl) {
-                    lbl.style.background = "none";
-                    lbl.style.color = "black";
-                    lbl.style.border = "none";
-                }
+            q.choices.forEach((_, i) => {
+                const lbl = document.getElementById(`label-q${qIndex}-c${i}`);
+                if (lbl) { lbl.style.background = "none"; lbl.style.color = "black"; lbl.style.border = "none"; }
             });
-
             if (selected) {
-                const answerIndex = parseInt(selected.value);
-                if (answerIndex === q.correct) {
-                    finalScore++;
-                    const correctLbl = document.getElementById(`label-q${qIndex}-c${answerIndex}`);
-                    correctLbl.style.background = "#d4edda"; 
-                    correctLbl.style.color = "#155724";
+                const ansIdx = parseInt(selected.value);
+                if (ansIdx === q.correct) {
+                    partScore++;
+                    document.getElementById(`label-q${qIndex}-c${ansIdx}`).style.background = "#d4edda";
                 } else {
-                    const wrongLbl = document.getElementById(`label-q${qIndex}-c${answerIndex}`);
-                    wrongLbl.style.background = "#f8d7da"; 
-                    wrongLbl.style.color = "#721c24";
-                    const correctLbl = document.getElementById(`label-q${qIndex}-c${q.correct}`);
-                    correctLbl.style.background = "#d4edda";
+                    document.getElementById(`label-q${qIndex}-c${ansIdx}`).style.background = "#f8d7da";
+                    document.getElementById(`label-q${qIndex}-c${q.correct}`).style.background = "#d4edda";
                 }
             } else {
                 const correctLbl = document.getElementById(`label-q${qIndex}-c${q.correct}`);
-                correctLbl.style.border = "2px dashed #28a745";
+                if (correctLbl) correctLbl.style.border = "1px dashed #28a745";
             }
         }
     });
 
-    // Score Feedback Logic
-    const isPerfect = finalScore === quizData.length && quizData.length > 0;
-    if (isPerfect) {
-        resultDiv.innerHTML = `<div style="color: #28a745; text-align: center;">
-                                    <h2>Great Job! 🌟</h2>
-                                    <p style="font-size: 1.5em;">Perfect Score: ${finalScore} / ${quizData.length}</p>
-                                </div>`;
+    const isPerfect = partScore === totalInPart;
+    resultDiv.innerHTML = isPerfect ? 
+        `<span style="color:#28a745;">Great Job! Perfect Score: ${partScore}/${totalInPart} 🌟</span>` :
+        `Part ${partNum} Score: ${partScore} / ${totalInPart}`;
+}
+
+function resetPart(partNum) {
+    if (partNum === 1) {
+        const section = document.getElementById("part-1-section");
+        if (!section) return;
+        section.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
+        section.querySelectorAll('.part1-label').forEach(lbl => {
+            lbl.style.background = "none";
+            lbl.style.color = "black";
+            lbl.style.border = "none";
+        });
+        document.getElementById("quiz-result-1").innerHTML = "";
     } else {
-        resultDiv.innerHTML = `<div style="text-align: center;">
-                                    <h3>Your Score: ${finalScore} / ${quizData.length}</h3>
-                                    <p style="color: #666;">Keep practicing to get a perfect score!</p>
-                                </div>`;
+        const section = document.getElementById("part-2-section");
+        if (!section) return;
+        section.querySelectorAll('.part2-input').forEach(input => {
+            input.value = "";
+            input.style.background = "#fffdec";
+            input.style.color = "black";
+        });
+        section.querySelectorAll('.part2-feedback').forEach(fb => fb.innerHTML = "");
+        document.getElementById("quiz-result-2").innerHTML = "";
     }
-    resultDiv.scrollIntoView({ behavior: 'smooth' });
 }
 
-function resetQuiz() {
-    // We simply reload the question template to clear everything
-    loadQuestion();
-    const resultDiv = document.getElementById("quiz-result");
-    if (resultDiv) resultDiv.innerHTML = "";
-    document.getElementById("quiz-container").scrollIntoView({ behavior: 'smooth' });
-}
-
-// ================= 5. SYSTEM SETUP =================
+// ================= 6. SYSTEM SETUP =================
 function loadVoices() {
     voices = speechSynthesis.getVoices().filter(v => v.lang.includes('en'));
     if (dialogue.length > 0) setupSpeakerControls();
