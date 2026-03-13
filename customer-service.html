@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="style.css">
+    <title>ESL Pro Tool</title>
+</head>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">ESL Pro</div>
+            
+            <input type="checkbox" id="nav-check">
+            <label for="nav-check" class="nav-btn">
+                <span></span>
+                <span></span>
+                <span></span>
+            </label>
+            
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="books.html">Books</a></li>
+            </ul>
+        </div>
+    </nav>
+<body>
+
+    <div class="card" id="text-section" style="display:none;">
+        <div id="text-container">
+            <div class="card" id="text-section" style="display:none;">
+    <div style="text-align: center; margin-bottom: 20px;">
+        <img src="https://drive.google.com/uc?export=view&id=17ZGiOq-PRivPftXbquKzZhk3Ipuphq5z" 
+             alt="Lesson Image" 
+             style="max-width: 100%; border-radius: 10px; border: 1px solid #ddd; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+    </div>
+
+    <div id="text-container"></div>
+</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>🎭 Dialogue Practice</h2>
+        <div style="text-align: center; margin-bottom: 20px;">
+            <iframe 
+                width="550" 
+                height="560" 
+                src="https://www.youtube.com/embed/xe1LdOrCWgI" 
+                title="YouTube video player" 
+                frameborder="0" 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                allowfullscreen
+                style="border-radius: 15px; border: 2px solid #007bff;">
+            </iframe>
+        </div>
+        <div id="voice-controls-container" style="margin-bottom: 15px;">
+            <p style="color: gray;">Loading speakers...</p>
+        </div>
+
+        <button class="primary" onclick="playDialogue()">▶ Play All</button>
+        <button onclick="stopDialogue()">Stop</button>
+        
+        <div id="fullDialogue" style="margin-top:20px;"></div>
+    </div>
+
+<div class="card" id="quiz-container">
+    <h2>📝 Quiz Practice</h2>
+    <div id="quiz-list"></div>
+    <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
+        <button class="primary" id="submit-btn" onclick="submitQuiz()" style="display:none;">Submit All Answers</button>
+        <button id="reset-btn" onclick="resetQuiz()" style="display:none; background-color: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">Reset Quiz</button>
+    </div>
+    <div id="quiz-result" style="margin-top: 20px; font-weight: bold; text-align: center;"></div>
+</div>
+
+    <script src="script.js"></script>
+</body>
+</html>
