@@ -114,6 +114,17 @@ a{
     margin: auto;
     text-align: center;
 }
+.listening-skills{
+      width: 500px;
+      height: 300px;
+      margin: auto;
+}
+.listening-skills img{
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  border-radius: 3px;
+}
 /* Mobile Responsiveness (Screen size < 768px) */
 @media (max-width: 768px) {
     .nav-btn {
