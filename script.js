@@ -1,12 +1,20 @@
-const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSLCn5weZR17UsAOd4Z8W0FlRwSnKiuJe2xdgWkrZtnEHObEaVXNAEIfVajhWuSbUi3FFNaITrouxmJ/pub?gid=439461232&single=true&output=csv";
+// ================= 0. DYNAMIC CONFIGURATION =================
+const BASE_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSLCn5weZR17UsAOd4Z8W0FlRwSnKiuJe2xdgWkrZtnEHObEaVXNAEIfVajhWuSbUi3FFNaITrouxmJ/pub?single=true&output=csv";
 
+function getTargetUrl() {
+    const pageName = window.location.pathname.split("/").pop();
+    let gid = "439461232"; 
+    if (pageName === "work-life-balance.html") { gid = "2001320284"; }
+    return `${BASE_CSV_URL}&gid=${gid}`;
+}
+
+const CSV_URL = getTargetUrl();
 let quizData = [];
 let dialogue = [];
 let normalTexts = []; 
 let voices = [];
-let currentQuestion = 0;
-let score = 0;
 let currentLine = 0;
+let isSpeaking = false; // Flag to control the Stop logic
 
 // ================= 1. FETCH & PARSE =================
 async function loadData() {
@@ -16,43 +24,37 @@ async function loadData() {
         parseCSV(csvText);
         
         if (normalTexts.length > 0) renderNormalText();
+        
         if (dialogue.length > 0) {
-            setupSpeakerControls(); 
-            renderDialogue();
+            const voiceControls = document.getElementById("voice-controls-container");
+            if (voiceControls) {
+                setupSpeakerControls(); 
+                renderDialogue();
+            }
         }
         if (quizData.length > 0) loadQuestion();
-        
-    } catch (e) {
-        console.error("Connection Error:", e);
-    }
+    } catch (e) { console.error("Connection Error:", e); }
 }
 
 function parseCSV(text) {
     const rows = text.split(/\r?\n/);
-    quizData = []; 
+    quizData = []; dialogue = []; normalTexts = [];
     rows.forEach((row, index) => {
         if (index === 0 || !row.trim()) return;
-        
         const cols = row.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g) || [];
         const cleanCols = cols.map(c => c.replace(/^"|"$/g, '').trim());
-
         const type = cleanCols[0]?.toUpperCase();
-
+        
         if (type === "TEXT") {
             normalTexts.push({ title: cleanCols[1], body: cleanCols[2] });
+        } else if (type === "HEADING") {
+            quizData.push({ type: "HEADING", title: cleanCols[1] });
         } else if (type === "QUIZ") {
-            quizData.push({
-                type: "MULTIPLE",
-                question: cleanCols[1],
-                choices: [cleanCols[2], cleanCols[3], cleanCols[4], cleanCols[5]],
-                correct: parseInt(cleanCols[6]) || 0
-            });
+            quizData.push({ type: "MULTIPLE", question: cleanCols[1], choices: [cleanCols[2], cleanCols[3], cleanCols[4], cleanCols[5]], correct: parseInt(cleanCols[6]) || 0 });
         } else if (type === "BLANKS") {
-            quizData.push({
-                type: "BLANKS",
-                sentence: cleanCols[1],
-                correctAnswer: cleanCols[2]?.toLowerCase().trim()
-            });
+            quizData.push({ type: "BLANKS", sentence: cleanCols[1], correctAnswer: cleanCols[2]?.toLowerCase().trim() });
+        } else if (type === "MATCHING") {
+            quizData.push({ type: "MATCHING", term: cleanCols[1], definition: cleanCols[2] });
         } else if (type === "DIALOGUE") {
             dialogue.push({ speaker: cleanCols[1], text: cleanCols[2] });
         }
@@ -63,269 +65,265 @@ function parseCSV(text) {
 function renderNormalText() {
     const section = document.getElementById("text-section");
     const container = document.getElementById("text-container");
-    if (!section) return;
+    if (!section || !container) return;
+    
     section.style.display = "block"; 
     container.innerHTML = "";
 
     normalTexts.forEach(item => {
         const div = document.createElement("div");
         div.style.marginBottom = "20px";
-        div.innerHTML = `<h2 style="color:#007bff;">${item.title}</h2><p style="font-size:1.1em; line-height:1.6;">${item.body}</p>`;
+        div.innerHTML = `
+            <h2 style="color:#007bff; font-style: italic;">${item.title || ""}</h2>
+            <p style="font-size:1.1em; line-height:1.6; margin-left: 10px;">${item.body || ""}</p>
+        `;
         container.appendChild(div);
     });
 }
 
-// ================= 3. DIALOGUE LOGIC =================
+// ================= 3. AUDIO LOGIC (WITH STOP FEATURE) =================
 function setupSpeakerControls() {
     const container = document.getElementById("voice-controls-container");
-    if (!container) return;
-    container.innerHTML = "";
+    if (!container) return; container.innerHTML = "";
     const uniqueSpeakers = [...new Set(dialogue.map(line => line.speaker))];
-
-    uniqueSpeakers.forEach((speaker, index) => {
+    uniqueSpeakers.forEach((speaker) => {
         const div = document.createElement("div");
-        div.style.marginBottom = "8px";
-        div.innerHTML = `<strong>${speaker}'s Voice: </strong> <select id="voice-for-${speaker}"></select>`;
+        div.innerHTML = `<strong>${speaker}:</strong> <select id="voice-for-${speaker}"></select>`;
         container.appendChild(div);
-
-        const select = document.getElementById(`voice-for-${speaker}`);
-        voices.forEach((v, i) => select.add(new Option(v.name, i)));
-        if (index < voices.length) select.selectedIndex = index;
+        voices.forEach((v, i) => document.getElementById(`voice-for-${speaker}`).add(new Option(v.name, i)));
     });
 }
 
 function renderDialogue() {
     const cont = document.getElementById("fullDialogue");
-    if (!cont) return;
-    cont.innerHTML = "";
-    dialogue.forEach((line, i) => {
-        const d = document.createElement("div");
-        d.id = `line-${i}`;
-        d.style.padding = "10px";
-        d.style.borderRadius = "5px";
-        d.innerHTML = `<strong>${line.speaker}:</strong> ${line.text}`;
-        cont.appendChild(d);
+    if (cont) cont.innerHTML = dialogue.map((line, i) => `<div id="line-${i}" style="padding:5px; border-radius:4px;"><strong>${line.speaker}:</strong> ${line.text}</div>`).join("");
+}
+
+function playDialogue() { 
+    speechSynthesis.cancel(); 
+    isSpeaking = true; 
+    currentLine = 0; 
+    speakLine(); 
+}
+
+function stopDialogue() { 
+    isSpeaking = false; 
+    speechSynthesis.cancel(); 
+    // Clear highlights
+    dialogue.forEach((_, i) => {
+        const el = document.getElementById(`line-${i}`);
+        if(el) el.style.background = "none";
     });
 }
 
-function playDialogue() {
-    speechSynthesis.cancel();
-    currentLine = 0;
-    speakLine();
-}
-
 function speakLine() {
-    if (currentLine >= dialogue.length) return;
+    if (!isSpeaking || currentLine >= dialogue.length) {
+        isSpeaking = false;
+        return;
+    }
+    
     const line = dialogue[currentLine];
     const ut = new SpeechSynthesisUtterance(line.text);
     const sel = document.getElementById(`voice-for-${line.speaker}`);
-    if (sel) ut.voice = voices[sel.value];
+    if (sel && voices[sel.value]) ut.voice = voices[sel.value];
 
     dialogue.forEach((_, i) => {
         const el = document.getElementById(`line-${i}`);
         if(el) el.style.background = (i === currentLine) ? "#e3f2fd" : "none";
     });
 
-    ut.onend = () => { currentLine++; speakLine(); };
+    ut.onend = () => { 
+        if (isSpeaking) {
+            currentLine++; 
+            speakLine(); 
+        }
+    };
     speechSynthesis.speak(ut);
 }
 
-// ================= 4. QUIZ LOGIC (SEPARATE CONTROLS) =================
-
+// ================= 4. QUIZ LOGIC (QUIZ, BLANKS, MATCHING) =================
 function loadQuestion() {
     const container = document.getElementById("quiz-list");
     if (!container) return;
-    
     container.innerHTML = ""; 
 
-    // --- PART 1: MULTIPLE CHOICE ---
-    const mcQuestions = quizData.filter(q => q.type === "MULTIPLE");
-    if (mcQuestions.length > 0) {
-        const part1Section = document.createElement("div");
-        part1Section.id = "part-1-section";
-        part1Section.innerHTML = `<h3 style="color: #007bff; border-bottom: 2px solid #007bff; padding-bottom: 5px;">Part I: Multiple Choice</h3>`;
-        
-        mcQuestions.forEach((q, i) => {
-            const realIdx = quizData.indexOf(q);
-            part1Section.appendChild(renderQuestionElement(q, realIdx, i + 1));
-        });
-        
-        const p1Controls = document.createElement("div");
-        p1Controls.style.cssText = "margin: 20px 0; display: flex; flex-direction: column; align-items: center;";
-        p1Controls.innerHTML = `
-            <div style="display: flex; gap: 10px; justify-content: center;">
-                <button onclick="submitPart(1)" style="padding:10px 20px; background:#28a745; color:white; border:none; border-radius:5px; cursor:pointer;">Submit Part I</button>
-                <button onclick="resetPart(1)" style="padding:10px 20px; background:#6c757d; color:white; border:none; border-radius:5px; cursor:pointer;">Reset Part I</button>
-            </div>
-            <div id="quiz-result-1" style="margin-top:15px; font-weight:bold; text-align: center;"></div>
-        `;
-        part1Section.appendChild(p1Controls);
-        container.appendChild(part1Section);
-    }
+    let sectionIndex = 0;
+    let currentSectionDiv = null;
+    let questionCounter = 1;
 
-    // --- PART 2: FILL IN THE BLANKS ---
-    const blankQuestions = quizData.filter(q => q.type === "BLANKS");
-    if (blankQuestions.length > 0) {
-        const part2Section = document.createElement("div");
-        part2Section.id = "part-2-section";
-        part2Section.style.marginTop = "50px";
-        part2Section.innerHTML = `<h3 style="color: #007bff; border-bottom: 2px solid #007bff; padding-bottom: 5px;">Part II: Fill in the Blanks</h3>`;
+    const allMatchingDefs = quizData.filter(q => q.type === "MATCHING").map(q => q.definition);
+    const shuffledMatchingDefs = [...allMatchingDefs].sort(() => Math.random() - 0.5);
 
-        const bankDiv = document.createElement("div");
-        bankDiv.style.cssText = "background:#f1f8ff; border:2px solid #007bff; padding:15px; border-radius:10px; margin-bottom:20px; text-align:center;";
-        const words = blankQuestions.map(q => q.correctAnswer).sort(() => Math.random() - 0.5);
-        bankDiv.innerHTML = `<p style="margin-top:0; font-weight:bold; color:#007bff;">Word Bank</p>`;
-        
-        words.forEach((word) => {
-            const span = document.createElement("span");
-            span.innerText = word;
-            span.draggable = true;
-            span.style.cssText = "display:inline-block; margin:5px; padding:8px 15px; background:white; border:1px solid #007bff; border-radius:5px; cursor:grab; font-weight:bold; user-select:none;";
-            span.ondragstart = (e) => e.dataTransfer.setData("text", e.target.innerText);
-            bankDiv.appendChild(span);
-        });
-        part2Section.appendChild(bankDiv);
+    quizData.forEach((item, index) => {
+        if (item.type === "HEADING") {
+            if (currentSectionDiv) addSectionControls(container, sectionIndex++);
+            
+            currentSectionDiv = document.createElement("div");
+            currentSectionDiv.id = `section-${sectionIndex}`;
+            currentSectionDiv.style.cssText = "margin-bottom: 40px; padding: 20px; border: 1px solid #eee; border-radius: 12px; background: #fff;";
+            currentSectionDiv.innerHTML = `<h3 style="color: #007bff; border-bottom: 2px solid #007bff; padding-bottom: 8px;">${item.title}</h3>`;
+            container.appendChild(currentSectionDiv);
 
-        blankQuestions.forEach((q, i) => {
-            const realIdx = quizData.indexOf(q);
-            part2Section.appendChild(renderQuestionElement(q, realIdx, i + 1));
-        });
-        
-        const p2Controls = document.createElement("div");
-        p2Controls.style.cssText = "margin: 20px 0; display: flex; flex-direction: column; align-items: center;";
-        p2Controls.innerHTML = `
-            <div style="display: flex; gap: 10px; justify-content: center;">
-                <button onclick="submitPart(2)" style="padding:10px 20px; background:#28a745; color:white; border:none; border-radius:5px; cursor:pointer;">Submit Part II</button>
-                <button onclick="resetPart(2)" style="padding:10px 20px; background:#6c757d; color:white; border:none; border-radius:5px; cursor:pointer;">Reset Part II</button>
-            </div>
-            <div id="quiz-result-2" style="margin-top:15px; font-weight:bold; text-align: center;"></div>
-        `;
-        part2Section.appendChild(p2Controls);
-        container.appendChild(part2Section);
-    }
+            const sectionBlanks = [];
+            for (let i = index + 1; i < quizData.length; i++) {
+                if (quizData[i].type === "HEADING") break;
+                if (quizData[i].type === "BLANKS") sectionBlanks.push(quizData[i].correctAnswer);
+            }
+
+            if (sectionBlanks.length > 0) {
+                const bank = document.createElement("div");
+                bank.style.cssText = "background:#f8f9fa; border:2px solid #007bff; padding:15px; border-radius:10px; margin: 15px 0; text-align:center;";
+                bank.innerHTML = `<p style="font-weight:bold; color: #007bff;">Word Bank</p>`;
+                sectionBlanks.sort(() => Math.random() - 0.5).forEach(word => {
+                    bank.innerHTML += `<span draggable="true" ondragstart="event.dataTransfer.setData('text', '${word}')" 
+                        style="display:inline-block; margin:5px; padding:6px 15px; font-weight:bold; color: black; background-color: #b2d5fa; border:1px solid #007bff; border-radius:5px; cursor:grab;">${word}</span>`;
+                });
+                currentSectionDiv.appendChild(bank);
+            }
+            questionCounter = 1; 
+        } else if (currentSectionDiv) {
+            currentSectionDiv.appendChild(renderQuestionElement(item, index, questionCounter++, shuffledMatchingDefs));
+        }
+    });
+    if (currentSectionDiv) addSectionControls(container, sectionIndex);
 }
 
-function renderQuestionElement(q, realIndex, displayNum) {
+function renderQuestionElement(q, realIndex, displayNum, shuffledDefs) {
     const qDiv = document.createElement("div");
-    qDiv.className = "question-block";
-    qDiv.style.cssText = "margin-bottom:20px; padding:15px; border-bottom:1px solid #eee;";
+    qDiv.style.cssText = "margin-bottom:20px; padding:10px;";
 
     if (q.type === "BLANKS") {
         const parts = q.sentence.split("___");
         qDiv.innerHTML = `
-            <p style="font-size:1.15em;">
-                <strong>${displayNum}.</strong> ${parts[0]} 
-                <input type="text" id="blank-${realIndex}" class="part2-input" 
-                    style="border:none; border-bottom:2px solid #007bff; width:140px; text-align:center; font-size:1em; outline:none; background:#fffdec; border-radius:4px;" 
-                    placeholder="" readonly> 
-                ${parts[1] || ""}
-            </p>
-            <div id="fb-${realIndex}" class="part2-feedback" style="font-weight:bold; margin-top:5px;"></div>
-        `;
-        const input = qDiv.querySelector('.part2-input');
-        input.ondragover = (e) => e.preventDefault();
-        input.ondrop = (e) => {
-            e.preventDefault();
-            e.target.value = e.dataTransfer.getData("text");
-            e.target.style.background = "#e3f2fd";
-        };
+            <p><strong>${displayNum}.</strong> ${parts[0]} 
+            <input type="text" id="blank-${realIndex}" 
+                   ondragover="event.preventDefault()" 
+                   ondrop="event.preventDefault(); this.value=event.dataTransfer.getData('text')"
+                   style="border:none; border-radius: 5px; border-bottom:2px solid #007bff; width:140px; text-align:center; background: #fffdec; font-size:1em; font-weight:bold;"> ${parts[1] || ""}</p>
+            <div id="fb-${realIndex}" style="font-weight:bold; margin-top:5px; font-size:0.9em;"></div>`;
+    } else if (q.type === "MATCHING") {
+        qDiv.innerHTML = `
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 15px;">
+                <span style="font-weight: bold;">${q.term}</span>
+                <select id="match-${realIndex}" style="padding: 8px; border-radius: 5px; border: 1px solid #007bff; font-size:1em; font-weight:bold; text-align:center; color: black;">
+                    <option value="">-- Choose Definition --</option>
+                    ${shuffledDefs.map(d => `<option value="${d}">${d}</option>`).join('')}
+                </select>
+            </div>
+            <div id="fb-${realIndex}" style="font-weight:bold; font-size:0.9em; text-align: right;"></div>`;
     } else {
         qDiv.innerHTML = `<h4>${displayNum}. ${q.question}</h4>`;
-        const choicesDiv = document.createElement("div");
         q.choices.forEach((choice, cIndex) => {
             if (!choice) return;
-            const label = document.createElement("label");
-            label.className = "part1-label";
-            label.style.cssText = "display:block; cursor:pointer; padding:5px; border-radius:4px;";
-            label.id = `label-q${realIndex}-c${cIndex}`;
-            label.innerHTML = `<input type="radio" name="question${realIndex}" value="${cIndex}"> ${choice}`;
-            choicesDiv.appendChild(label);
+            qDiv.innerHTML += `<label id="label-q${realIndex}-c${cIndex}" style="display:block; padding:4px;">
+                <input type="radio" name="question${realIndex}" value="${cIndex}"> ${choice}</label>`;
         });
-        qDiv.appendChild(choicesDiv);
+        qDiv.innerHTML += `<div id="fb-${realIndex}" style="font-weight:bold; margin-top:5px;"></div>`;
     }
     return qDiv;
 }
 
-// ================= 5. SEPARATE SUBMIT/RESET LOGIC =================
+function addSectionControls(container, idx) {
+    const div = document.createElement("div");
+    div.style.cssText = "text-align: center; margin-top: 20px; padding-top: 15px; border-top: 1px solid #eee;";
+    div.innerHTML = `
+        <button onclick="submitSection(${idx})" style="padding:10px 25px; background:#28a745; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">Submit Results</button>
+        <button onclick="resetSection(${idx})" style="padding:10px 25px; background:#6c757d; color:white; border:none; border-radius:5px; cursor:pointer; margin-left:10px;">Reset</button>
+        <div id="score-${idx}" style="margin-top:20px; padding:15px; border-radius:10px; display:none;"></div>`;
+    container.lastChild.appendChild(div);
+}
 
-function submitPart(partNum) {
-    let partScore = 0;
-    let totalInPart = 0;
-    const typeToFilter = (partNum === 1) ? "MULTIPLE" : "BLANKS";
-    const resultDiv = document.getElementById(`quiz-result-${partNum}`);
+// ================= 5. SUBMIT WITH GRADING & REMARKS =================
+function submitSection(sIdx) {
+    const section = document.getElementById(`section-${sIdx}`);
+    let score = 0, total = 0;
     
-    quizData.forEach((q, qIndex) => {
-        if (q.type !== typeToFilter) return;
-        totalInPart++;
+    quizData.forEach((q, idx) => {
+        const fb = section.querySelector(`#fb-${idx}`);
+        if (!fb) return;
+        const blank = section.querySelector(`#blank-${idx}`);
+        const radio = section.querySelector(`input[name="question${idx}"]`);
+        const match = section.querySelector(`#match-${idx}`);
 
-        if (q.type === "BLANKS") {
-            const input = document.getElementById(`blank-${qIndex}`);
-            const fb = document.getElementById(`fb-${qIndex}`);
-            if (!input) return;
-            const userAns = input.value.toLowerCase().trim();
-            if (userAns === q.correctAnswer) {
-                partScore++;
-                input.style.color = "#28a745"; fb.innerHTML = "Correct! ✨"; fb.style.color = "#28a745";
-            } else {
-                input.style.color = "#dc3545"; fb.innerHTML = `Wrong. Answer: ${q.correctAnswer}`; fb.style.color = "#dc3545";
-            }
-        } else {
-            const selected = document.querySelector(`input[name="question${qIndex}"]:checked`);
-            q.choices.forEach((_, i) => {
-                const lbl = document.getElementById(`label-q${qIndex}-c${i}`);
-                if (lbl) { lbl.style.background = "none"; lbl.style.color = "black"; lbl.style.border = "none"; }
+        // Reset any previous highlights for Multiple Choice
+        if (radio) {
+            q.choices.forEach((_, cIdx) => {
+                const label = section.querySelector(`#label-q${idx}-c${cIdx}`);
+                if (label) label.style.background = "none";
             });
-            if (selected) {
-                const ansIdx = parseInt(selected.value);
-                if (ansIdx === q.correct) {
-                    partScore++;
-                    document.getElementById(`label-q${qIndex}-c${ansIdx}`).style.background = "#d4edda";
-                } else {
-                    document.getElementById(`label-q${qIndex}-c${ansIdx}`).style.background = "#f8d7da";
-                    document.getElementById(`label-q${qIndex}-c${q.correct}`).style.background = "#d4edda";
+        }
+
+        if (blank) {
+            total++;
+            if (blank.value.toLowerCase().trim() === q.correctAnswer) { 
+                score++; fb.innerHTML="Correct! ✨"; fb.style.color="#28a745"; 
+            } else { 
+                fb.innerHTML=`The correct answer is "${q.correctAnswer}"`; fb.style.color="#dc3545"; 
+            }
+        } else if (match) {
+            total++;
+            if (match.value === q.definition) { 
+                score++; fb.innerHTML="✓ Correct"; fb.style.color="#28a745"; 
+            } else { 
+                fb.innerHTML=`The correct answer is "${q.definition}"`; fb.style.color="#dc3545"; 
+            }
+        } else if (radio) {
+            total++;
+            const sel = section.querySelector(`input[name="question${idx}"]:checked`);
+            const isCorrect = sel && parseInt(sel.value) === q.correct;
+            
+            if (isCorrect) { 
+                score++; 
+                fb.innerHTML="Correct! ✨"; 
+                fb.style.color="#28a745";
+            } else { 
+                const correctText = q.choices[q.correct];
+                // Show hint message
+                fb.innerHTML = `The correct answer is "${correctText}"`; 
+                fb.style.color="#dc3545";
+                // Add green highlight to the correct answer label
+                const correctLabel = section.querySelector(`#label-q${idx}-c${q.correct}`);
+                if (correctLabel) {
+                    correctLabel.style.background = "#d4edda";
+                    correctLabel.style.borderRadius = "4px";
+                    correctLabel.style.transition = "0.3s";
                 }
-            } else {
-                const correctLbl = document.getElementById(`label-q${qIndex}-c${q.correct}`);
-                if (correctLbl) correctLbl.style.border = "1px dashed #28a745";
             }
         }
     });
 
-    const isPerfect = partScore === totalInPart;
-    resultDiv.innerHTML = isPerfect ? 
-        `<span style="color:#28a745;">Great Job! Perfect Score: ${partScore}/${totalInPart} 🌟</span>` :
-        `Part ${partNum} Score: ${partScore} / ${totalInPart}`;
+    const scoreDiv = document.getElementById(`score-${sIdx}`);
+    const percentage = (score / total) * 100;
+    
+    let message = percentage === 100 ? "🌟 Good job! Perfect Score!" : (percentage >= 70 ? "✨ Great effort!" : "📖 Keep it up! Try again!");
+    let bgColor = percentage === 100 ? "#d4edda" : (percentage >= 70 ? "#fff3cd" : "#f8d7da");
+    let textColor = percentage === 100 ? "#155724" : (percentage >= 70 ? "#856404" : "#721c24");
+
+    scoreDiv.style.display = "block";
+    scoreDiv.style.backgroundColor = bgColor;
+    scoreDiv.style.color = textColor;
+    scoreDiv.style.border = `1px solid ${textColor}`;
+    scoreDiv.style.padding = "15px";
+    scoreDiv.style.borderRadius = "10px";
+    scoreDiv.style.marginTop = "20px";
+    
+    scoreDiv.innerHTML = `<strong>${message}</strong><br>Score: ${score} / ${total} (${percentage.toFixed(0)}%)`;
+    scoreDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
-function resetPart(partNum) {
-    if (partNum === 1) {
-        const section = document.getElementById("part-1-section");
-        if (!section) return;
-        section.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
-        section.querySelectorAll('.part1-label').forEach(lbl => {
-            lbl.style.background = "none";
-            lbl.style.color = "black";
-            lbl.style.border = "none";
-        });
-        document.getElementById("quiz-result-1").innerHTML = "";
-    } else {
-        const section = document.getElementById("part-2-section");
-        if (!section) return;
-        section.querySelectorAll('.part2-input').forEach(input => {
-            input.value = "";
-            input.style.background = "#fffdec";
-            input.style.color = "black";
-        });
-        section.querySelectorAll('.part2-feedback').forEach(fb => fb.innerHTML = "");
-        document.getElementById("quiz-result-2").innerHTML = "";
-    }
+function resetSection(sIdx) {
+    const section = document.getElementById(`section-${sIdx}`);
+    section.querySelectorAll('input[type="text"]').forEach(i => i.value="");
+    section.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
+    section.querySelectorAll('select').forEach(s => s.selectedIndex = 0);
+    section.querySelectorAll('[id^="fb-"]').forEach(f => f.innerHTML="");
+    // Clear the green highlights on reset
+    section.querySelectorAll('[id^="label-q"]').forEach(l => l.style.background = "none");
+    
+    const scoreDiv = document.getElementById(`score-${sIdx}`);
+    if (scoreDiv) scoreDiv.style.display = "none";
 }
 
-// ================= 6. SYSTEM SETUP =================
-function loadVoices() {
-    voices = speechSynthesis.getVoices().filter(v => v.lang.includes('en'));
-    if (dialogue.length > 0) setupSpeakerControls();
-}
-
+function loadVoices() { voices = speechSynthesis.getVoices().filter(v => v.lang.includes('en')); }
 speechSynthesis.onvoiceschanged = loadVoices;
 window.onload = loadData;
