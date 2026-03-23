@@ -3,8 +3,15 @@ const BASE_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSLCn5weZR
 
 function getTargetUrl() {
     const pageName = window.location.pathname.split("/").pop();
-    let gid = "439461232"; 
-    if (pageName === "work-life-balance.html") { gid = "2001320284"; }
+    let gid = "439461232"; // Default sheet
+    
+    if (pageName === "work-life-balance.html") { 
+        gid = "2001320284"; 
+    } else if (pageName === "workplace-ethics.html") { 
+        // NEW: GID for Workplace Ethics and Professional Responsibility
+        gid = "2072343238"; 
+    }
+    
     return `${BASE_CSV_URL}&gid=${gid}`;
 }
 
@@ -109,7 +116,6 @@ function playDialogue() {
 function stopDialogue() { 
     isSpeaking = false; 
     speechSynthesis.cancel(); 
-    // Clear highlights
     dialogue.forEach((_, i) => {
         const el = document.getElementById(`line-${i}`);
         if(el) el.style.background = "none";
@@ -141,7 +147,7 @@ function speakLine() {
     speechSynthesis.speak(ut);
 }
 
-// ================= 4. QUIZ LOGIC (QUIZ, BLANKS, MATCHING) =================
+// ================= 4. QUIZ LOGIC =================
 function loadQuestion() {
     const container = document.getElementById("quiz-list");
     if (!container) return;
@@ -205,7 +211,7 @@ function renderQuestionElement(q, realIndex, displayNum, shuffledDefs) {
         qDiv.innerHTML = `
             <div style="display: flex; align-items: center; justify-content: space-between; gap: 15px;">
                 <span style="font-weight: bold;">${q.term}</span>
-                <select id="match-${realIndex}" style="padding: 8px; border-radius: 5px; border: 1px solid #007bff; font-size:1em; font-weight:bold; text-align:center; color: black;">
+                <select id="match-${realIndex}" style="padding: 8px; border-radius: 5px; border: 1px solid #007bff; font-size:1em; font-weight:bold; text-align:center;">
                     <option value="">-- Choose Definition --</option>
                     ${shuffledDefs.map(d => `<option value="${d}">${d}</option>`).join('')}
                 </select>
@@ -245,7 +251,6 @@ function submitSection(sIdx) {
         const radio = section.querySelector(`input[name="question${idx}"]`);
         const match = section.querySelector(`#match-${idx}`);
 
-        // Reset any previous highlights for Multiple Choice
         if (radio) {
             q.choices.forEach((_, cIdx) => {
                 const label = section.querySelector(`#label-q${idx}-c${cIdx}`);
@@ -273,21 +278,13 @@ function submitSection(sIdx) {
             const isCorrect = sel && parseInt(sel.value) === q.correct;
             
             if (isCorrect) { 
-                score++; 
-                fb.innerHTML="Correct! ✨"; 
-                fb.style.color="#28a745";
+                score++; fb.innerHTML="Correct! ✨"; fb.style.color="#28a745";
             } else { 
                 const correctText = q.choices[q.correct];
-                // Show hint message
                 fb.innerHTML = `The correct answer is "${correctText}"`; 
                 fb.style.color="#dc3545";
-                // Add green highlight to the correct answer label
                 const correctLabel = section.querySelector(`#label-q${idx}-c${q.correct}`);
-                if (correctLabel) {
-                    correctLabel.style.background = "#d4edda";
-                    correctLabel.style.borderRadius = "4px";
-                    correctLabel.style.transition = "0.3s";
-                }
+                if (correctLabel) correctLabel.style.background = "#d4edda";
             }
         }
     });
@@ -317,9 +314,7 @@ function resetSection(sIdx) {
     section.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
     section.querySelectorAll('select').forEach(s => s.selectedIndex = 0);
     section.querySelectorAll('[id^="fb-"]').forEach(f => f.innerHTML="");
-    // Clear the green highlights on reset
     section.querySelectorAll('[id^="label-q"]').forEach(l => l.style.background = "none");
-    
     const scoreDiv = document.getElementById(`score-${sIdx}`);
     if (scoreDiv) scoreDiv.style.display = "none";
 }
