@@ -322,3 +322,38 @@ function resetSection(sIdx) {
 function loadVoices() { voices = speechSynthesis.getVoices().filter(v => v.lang.includes('en')); }
 speechSynthesis.onvoiceschanged = loadVoices;
 window.onload = loadData;
+
+function updatePHTime() {
+    const timeElement = document.getElementById('ph-time');
+    const dateElement = document.getElementById('ph-date');
+
+    const now = new Date();
+
+    // Options for the Time (Forces Manila Timezone)
+    const timeOptions = {
+        timeZone: 'Asia/Manila',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true
+    };
+
+    // Options for the Date (Forces Manila Timezone)
+    const dateOptions = {
+        timeZone: 'Asia/Manila',
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    };
+
+    // Update the HTML
+    timeElement.textContent = now.toLocaleTimeString('en-US', timeOptions);
+    dateElement.textContent = now.toLocaleDateString('en-US', dateOptions).toUpperCase();
+}
+
+// Start the clock and update every 1 second
+setInterval(updatePHTime, 1000);
+
+// Run immediately so there's no 1-second delay on load
+updatePHTime();
