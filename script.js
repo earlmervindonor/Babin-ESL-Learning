@@ -91,7 +91,7 @@ function renderNormalText() {
     });
 }
 
-// ================= 3. AUDIO LOGIC (WITH STOP FEATURE) =================
+// ================= 3. AUDIO LOGIC =================
 function setupSpeakerControls() {
     const container = document.getElementById("voice-controls-container");
     if (!container) return; container.innerHTML = "";
@@ -177,7 +177,6 @@ function loadQuestion() {
             for (let i = index + 1; i < quizData.length; i++) {
                 if (quizData[i].type === "HEADING") break;
                 if (quizData[i].type === "BLANKS") sectionBlanks.push(quizData[i].correctAnswer);
-                // REMOVED SPELLING FROM WORD BANK
             }
 
             if (sectionBlanks.length > 0) {
@@ -212,11 +211,14 @@ function renderQuestionElement(q, realIndex, displayNum, shuffledDefs) {
                    style="border:none; border-radius: 5px; border-bottom:2px solid #007bff; width:140px; text-align:center; background: #fffdec; font-size:1em; font-weight:bold;"> ${parts[1] || ""}</p>
             <div id="fb-${realIndex}" style="font-weight:bold; margin-top:5px; font-size:0.9em;"></div>`;
     } 
+    // UPDATED SPELLING RENDERER TO SHOW THE HINT (Column B)
     else if (q.type === "SPELLING") {
         qDiv.innerHTML = `
-            <p><strong>${displayNum}. Spell the word:</strong> <i style="color:#555;">(Type the correct word manually)</i></p>
+            <p><strong>${displayNum}. Spell the word for:</strong> <br>
+            <span style="color:#007bff; font-size:1.1em; font-weight:bold; display:block; margin: 10px 0;">"${q.hint}"</span></p>
             <input type="text" id="spelling-${realIndex}" 
-                   style="border:none; border-bottom:2px solid #28a745; width:180px; text-align:center; background: #f0fff4; font-size:1em; font-weight:bold; outline:none;">
+                   placeholder="Type correct spelling..."
+                   style="border:none; border-bottom:2px solid #28a745; width:220px; text-align:center; background: #f0fff4; font-size:1em; font-weight:bold; outline:none; padding:5px;">
             <div id="fb-${realIndex}" style="font-weight:bold; margin-top:5px; font-size:0.9em;"></div>`;
     }
     else if (q.type === "MATCHING") {
