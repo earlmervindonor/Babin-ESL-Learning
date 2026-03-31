@@ -3,22 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="style.css">
     <title>ESL Pro Tool</title>
+    <link rel="stylesheet" href="style.css">
 </head>
+
+
+<style>
+
+/* DASHBOARD */
+.dashboard {
+    padding: 30px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+/* CARD STYLE */
+.card {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+/* CLOCK */
+.clock-card {
+    text-align: center;
+}
+
+#ph-date {
+    font-size: 18px;
+    margin-bottom: 10px;
+    color: #555;
+}
+
+#ph-time {
+    font-size: 36px;
+    font-weight: bold;
+    color: #2563eb;
+}
+
+.ph-label {
+    margin-top: 10px;
+    font-size: 12px;
+    color: #888;
+}
+
+/* WELCOME */
+.welcome-card h2 {
+    margin-bottom: 10px;
+}
+
+.welcome-card p {
+    color: #666;
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+    .dashboard {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
 <body>
 
+    <!-- NAVBAR -->
     <nav class="navbar">
         <div class="nav-container">
             <div class="logo">ESL Pro</div>
-            
-            <input type="checkbox" id="nav-check">
-            <label for="nav-check" class="nav-btn">
-                <span></span>
-                <span></span>
-                <span></span>
-            </label>
-            
+
             <ul class="nav-links">
                 <li><a href="index.html">Home</a></li>
                 <li><a href="books.html">Books</a></li>
@@ -26,13 +79,24 @@
         </div>
     </nav>
 
-       <div class="ph-clock-widget">
-    <div id="ph-date">LOADING DATE...</div>
-    <div id="ph-time">00:00:00 AM</div>
-    <div class="ph-label">PHILIPPINE STANDARD TIME</div>
+    <!-- MAIN DASHBOARD -->
+    <div class="dashboard">
+
+        <!-- CLOCK CARD -->
+        <div class="card clock-card">
+            <div id="ph-date">LOADING DATE...</div>
+            <div id="ph-time">00:00:00 AM</div>
+            <div class="ph-label">PHILIPPINE STANDARD TIME</div>
         </div>
-            <h2>Welcome to my class!</h2>
-            
+
+        <!-- WELCOME CARD -->
+        <div class="card welcome-card">
+            <h2>Welcome to my class! 👋</h2>
+            <p>Let's learn English in a fun and interactive way.</p>
+        </div>
+
+    </div>
+
     <script src="script.js"></script>
 </body>
 </html>
