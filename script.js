@@ -3,25 +3,25 @@ const BASE_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSLCn5weZR
 
 function getTargetUrl() {
     const pageName = window.location.pathname.split("/").pop();
-    let gid = "439461232"; // Default sheet
+    let gid = "439461232"; // Default sheet (Home/General)
     
     if (pageName === "work-life-balance.html") { 
         gid = "2001320284"; 
     } else if (pageName === "workplace-ethics.html") { 
-        // NEW: GID for Workplace Ethics and Professional Responsibility
         gid = "2072343238"; 
+    } else if (pageName === "restaurant.html") { 
+        gid = "1968398657"; 
     }
     
     return `${BASE_CSV_URL}&gid=${gid}`;
 }
-
 const CSV_URL = getTargetUrl();
 let quizData = [];
 let dialogue = [];
 let normalTexts = []; 
 let voices = [];
 let currentLine = 0;
-let isSpeaking = false; // Flag to control the Stop logic
+let isSpeaking = false; 
 
 // ================= 1. FETCH & PARSE =================
 async function loadData() {
@@ -64,6 +64,9 @@ function parseCSV(text) {
             quizData.push({ type: "MATCHING", term: cleanCols[1], definition: cleanCols[2] });
         } else if (type === "DIALOGUE") {
             dialogue.push({ speaker: cleanCols[1], text: cleanCols[2] });
+        } 
+        else if (type === "SPELLING") {
+            quizData.push({ type: "SPELLING", hint: cleanCols[1], correctAnswer: cleanCols[2]?.toLowerCase().trim() });
         }
     });
 }
@@ -174,6 +177,7 @@ function loadQuestion() {
             for (let i = index + 1; i < quizData.length; i++) {
                 if (quizData[i].type === "HEADING") break;
                 if (quizData[i].type === "BLANKS") sectionBlanks.push(quizData[i].correctAnswer);
+                // REMOVED SPELLING FROM WORD BANK
             }
 
             if (sectionBlanks.length > 0) {
@@ -207,7 +211,15 @@ function renderQuestionElement(q, realIndex, displayNum, shuffledDefs) {
                    ondrop="event.preventDefault(); this.value=event.dataTransfer.getData('text')"
                    style="border:none; border-radius: 5px; border-bottom:2px solid #007bff; width:140px; text-align:center; background: #fffdec; font-size:1em; font-weight:bold;"> ${parts[1] || ""}</p>
             <div id="fb-${realIndex}" style="font-weight:bold; margin-top:5px; font-size:0.9em;"></div>`;
-    } else if (q.type === "MATCHING") {
+    } 
+    else if (q.type === "SPELLING") {
+        qDiv.innerHTML = `
+            <p><strong>${displayNum}. Spell the word:</strong> <i style="color:#555;">(Type the correct word manually)</i></p>
+            <input type="text" id="spelling-${realIndex}" 
+                   style="border:none; border-bottom:2px solid #28a745; width:180px; text-align:center; background: #f0fff4; font-size:1em; font-weight:bold; outline:none;">
+            <div id="fb-${realIndex}" style="font-weight:bold; margin-top:5px; font-size:0.9em;"></div>`;
+    }
+    else if (q.type === "MATCHING") {
         qDiv.innerHTML = `
             <div style="display: flex; align-items: center; justify-content: space-between; gap: 15px;">
                 <span style="font-weight: bold;">${q.term}</span>
@@ -247,18 +259,21 @@ function submitSection(sIdx) {
     quizData.forEach((q, idx) => {
         const fb = section.querySelector(`#fb-${idx}`);
         if (!fb) return;
+        
+        const spelling = section.querySelector(`#spelling-${idx}`);
         const blank = section.querySelector(`#blank-${idx}`);
         const radio = section.querySelector(`input[name="question${idx}"]`);
         const match = section.querySelector(`#match-${idx}`);
 
-        if (radio) {
-            q.choices.forEach((_, cIdx) => {
-                const label = section.querySelector(`#label-q${idx}-c${cIdx}`);
-                if (label) label.style.background = "none";
-            });
+        if (spelling) {
+            total++;
+            if (spelling.value.toLowerCase().trim() === q.correctAnswer) {
+                score++; fb.innerHTML="Correct! ✨"; fb.style.color="#28a745";
+            } else {
+                fb.innerHTML=`Incorrect. Correct spelling: "${q.correctAnswer}"`; fb.style.color="#dc3545";
+            }
         }
-
-        if (blank) {
+        else if (blank) {
             total++;
             if (blank.value.toLowerCase().trim() === q.correctAnswer) { 
                 score++; fb.innerHTML="Correct! ✨"; fb.style.color="#28a745"; 
@@ -329,7 +344,6 @@ function updatePHTime() {
 
     const now = new Date();
 
-    // Options for the Time (Forces Manila Timezone)
     const timeOptions = {
         timeZone: 'Asia/Manila',
         hour: '2-digit',
@@ -338,7 +352,6 @@ function updatePHTime() {
         hour12: true
     };
 
-    // Options for the Date (Forces Manila Timezone)
     const dateOptions = {
         timeZone: 'Asia/Manila',
         weekday: 'long',
@@ -347,13 +360,9 @@ function updatePHTime() {
         day: 'numeric'
     };
 
-    // Update the HTML
-    timeElement.textContent = now.toLocaleTimeString('en-US', timeOptions);
-    dateElement.textContent = now.toLocaleDateString('en-US', dateOptions).toUpperCase();
+    if(timeElement) timeElement.textContent = now.toLocaleTimeString('en-US', timeOptions);
+    if(dateElement) dateElement.textContent = now.toLocaleDateString('en-US', dateOptions).toUpperCase();
 }
 
-// Start the clock and update every 1 second
 setInterval(updatePHTime, 1000);
-
-// Run immediately so there's no 1-second delay on load
 updatePHTime();
