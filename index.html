@@ -3,100 +3,172 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ESL Pro Tool</title>
-    <link rel="stylesheet" href="style.css">
+    <title>ESL Pro Tool - Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --sidebar-width: 260px;
+            --sidebar-bg: #1e293b;
+            --border: #e2e8f0;
+        }
+
+        /* --- DARK MODE THEME --- */
+        body.dark-mode {
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --sidebar-bg: #020617;
+            --border: #334155;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; transition: background 0.3s ease, color 0.3s ease; }
+
+        body { background-color: var(--bg); color: var(--text-main); display: flex; min-height: 100vh; overflow-x: hidden; }
+
+        .sidebar { width: var(--sidebar-width); background: var(--sidebar-bg); color: white; padding: 20px; position: fixed; height: 100vh; z-index: 1000; transition: transform 0.3s ease, background 0.3s ease; }
+
+        @media (max-width: 1024px) { .sidebar { transform: translateX(-100%); } .sidebar.active { transform: translateX(0); } }
+
+        .sidebar .logo { font-size: 22px; font-weight: 700; color: #ffffff; margin-bottom: 40px; padding-left: 10px; }
+        .side-link { padding: 12px 15px; color: #cbd5e1; text-decoration: none; border-radius: 8px; margin-bottom: 5px; display: flex; align-items: center; gap: 12px; transition: 0.2s; }
+        .side-link:hover, .side-link.active { background: #334155; color: white; }
+
+        .main-content { flex: 1; margin-left: var(--sidebar-width); display: flex; flex-direction: column; width: 100%; }
+        @media (max-width: 1024px) { .main-content { margin-left: 0; } }
+
+        .top-nav { background: var(--card-bg); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 900; }
+        .menu-toggle { display: none; font-size: 24px; cursor: pointer; color: var(--text-main); }
+        @media (max-width: 1024px) { .menu-toggle { display: block; } }
+
+        .dashboard-grid { padding: 20px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .card { background: var(--card-bg); border-radius: 16px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); border: 1px solid var(--border); }
+
+        .welcome-card { grid-column: span 2; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; }
+        .clock-card { grid-column: span 1; text-align: center; }
+        .stat-card { display: flex; align-items: center; gap: 15px; }
+        .sticky-card { grid-column: span 1; grid-row: span 2; }
+
+        .icon-box { width: 45px; height: 45px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+        #ph-time { font-size: 2.5rem; font-weight: 800; color: var(--primary); }
+
+        .sticky-card textarea { width: 100%; height: 200px; border: none; background: #fffdec; padding: 15px; border-radius: 8px; resize: none; color: #1e293b; }
+        body.dark-mode .sticky-card textarea { background: #334155; color: #f1f5f9; }
+
+        @media (max-width: 1100px) { .dashboard-grid { grid-template-columns: repeat(2, 1fr); } .sticky-card { grid-column: span 2; grid-row: auto; } }
+        @media (max-width: 768px) { .dashboard-grid { grid-template-columns: 1fr; padding: 15px; } .welcome-card, .clock-card, .sticky-card { grid-column: span 1; } #ph-time { font-size: 2rem; } .welcome-card h2 { font-size: 22px; } }
+
+        .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; }
+        .sidebar-overlay.active { display: block; }
+    </style>
 </head>
-
-
-<style>
-
-/* DASHBOARD */
-.dashboard {
-    padding: 30px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-}
-
-/* CARD STYLE */
-.card {
-    background: white;
-    padding: 25px;
-    border-radius: 12px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-}
-
-/* CLOCK */
-.clock-card {
-    text-align: center;
-}
-
-#ph-date {
-    font-size: 18px;
-    margin-bottom: 10px;
-    color: #555;
-}
-
-#ph-time {
-    font-size: 36px;
-    font-weight: bold;
-    color: #2563eb;
-}
-
-.ph-label {
-    margin-top: 10px;
-    font-size: 12px;
-    color: #888;
-}
-
-/* WELCOME */
-.welcome-card h2 {
-    margin-bottom: 10px;
-}
-
-.welcome-card p {
-    color: #666;
-}
-
-/* RESPONSIVE */
-@media (max-width: 768px) {
-    .dashboard {
-        grid-template-columns: 1fr;
-    }
-}
-</style>
 <body>
 
-    <!-- NAVBAR -->
-    <nav class="navbar">
-        <div class="nav-container">
-            <div class="logo">ESL Pro</div>
+    <div class="sidebar-overlay" id="overlay"></div>
 
-            <ul class="nav-links">
-                <li><a href="index.html">Home</a></li>
-                <li><a href="books.html">Books</a></li>
-            </ul>
+    <aside class="sidebar" id="sidebar">
+        <div class="logo">ESL PRO TOOL</div>
+        <nav>
+            <a href="index.html" class="side-link active"><i class="fa-solid fa-house"></i> Dashboard</a>
+            <a href="books.html" class="side-link"><i class="fa-solid fa-book"></i> Lessons</a>
+            <a href="progress.html" class="side-link"><i class="fa-solid fa-chart-line"></i> Progress</a>
+            <a href="#" class="side-link" id="settings-link"><i class="fa-solid fa-moon"></i> Theme</a>
+            <a href="#" onclick="logout()" class="side-link" style="margin-top: 20px; color: #f87171;"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <header class="top-nav">
+            <div class="menu-toggle" id="menu-btn"><i class="fa-solid fa-bars"></i></div>
+            <div class="search-bar" style="display: flex; align-items: center;">
+                <i class="fa-solid fa-magnifying-glass" style="color: #94a3b8;"></i>
+                <input type="text" placeholder="Search..." style="border:none; outline:none; margin-left:10px; width: 100px; background: transparent; color: var(--text-main);">
+            </div>
+            <div class="user-profile" style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-weight: 600; font-size: 14px;">Teacher Shein</span>
+                <i class="fa-solid fa-circle-user fa-xl"></i>
+            </div>
+        </header>
+
+        <div class="dashboard-grid">
+            <div class="card welcome-card">
+                <h2>Welcome back, Shein! 👋</h2>
+                <p>Ready for your lessons today?</p>
+                <button style="margin-top: 15px; padding: 8px 16px; border-radius: 6px; border:none; cursor:pointer; font-weight:bold; background: white; color: var(--primary);">View Schedule</button>
+            </div>
+
+            <div class="card clock-card">
+                <div id="ph-date" style="font-size: 14px; font-weight: 600; color: var(--text-muted);">LOADING...</div>
+                <div id="ph-time">00:00 AM</div>
+                <div style="font-size: 10px; color: var(--text-muted);">MANILA, PH</div>
+            </div>
+
+            <div class="card stat-card">
+                <div class="icon-box" style="background: #dcfce7; color: #16a34a;"><i class="fa-solid fa-graduation-cap"></i></div>
+                <div>
+                    <div style="font-size: 12px; color: var(--text-muted);">Completed</div>
+                    <div style="font-size: 18px; font-weight: 700;">4 Lessons</div>
+                </div>
+            </div>
+
+            <div class="card stat-card">
+                <div class="icon-box" style="background: #fee2e2; color: #dc2626;"><i class="fa-solid fa-star"></i></div>
+                <div>
+                    <div style="font-size: 12px; color: var(--text-muted);">Rating</div>
+                    <div style="font-size: 18px; font-weight: 700;">5.0 / 5.0</div>
+                </div>
+            </div>
+
+            <div class="card sticky-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <h3 style="font-size: 15px;"><i class="fa-solid fa-thumbtack"></i> Notes</h3>
+                    <div style="display: flex; gap: 10px;">
+                        <button id="save-note" title="Save to Cloud" style="border:none; background:none; color: var(--primary); cursor:pointer;"><i class="fa-solid fa-cloud-arrow-up"></i></button>
+                        <button id="delete-note" title="Clear Note" style="border:none; background:none; color: #f87171; cursor:pointer;"><i class="fa-solid fa-trash-can"></i></button>
+                    </div>
+                </div>
+                <textarea id="sticky-notes" placeholder="Loading your notes..."></textarea>
+                <div id="save-status" style="font-size: 10px; color: var(--text-muted); margin-top: 5px; text-align: right;">Connecting...</div>
+            </div>
         </div>
-    </nav>
+    </main>
 
-    <!-- MAIN DASHBOARD -->
-    <div class="dashboard">
+    <script>
+        const menuBtn = document.getElementById('menu-btn');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
 
-        <!-- CLOCK CARD -->
-        <div class="card clock-card">
-            <div id="ph-date">LOADING DATE...</div>
-            <div id="ph-time">00:00:00 AM</div>
-            <div class="ph-label">PHILIPPINE STANDARD TIME</div>
-        </div>
+        menuBtn.onclick = () => { sidebar.classList.add('active'); overlay.classList.add('active'); };
+        overlay.onclick = () => { sidebar.classList.remove('active'); overlay.classList.remove('active'); };
 
-        <!-- WELCOME CARD -->
-        <div class="card welcome-card">
-            <h2>Welcome to my class! 👋</h2>
-            <p>Let's learn English in a fun and interactive way.</p>
-        </div>
 
-    </div>
+        // 1. SECURITY CHECK: Redirect if not logged in
+if (localStorage.getItem('isLoggedIn') !== 'true') {
+    window.location.href = "login.html";
+}
 
+// 2. SET TEACHER NAME: Update the UI with the logged-in name
+window.addEventListener('DOMContentLoaded', () => {
+    const nameSpan = document.querySelector('.user-profile span');
+    const storedName = localStorage.getItem('teacherName');
+    if (nameSpan && storedName) {
+        nameSpan.textContent = "Teacher " + storedName;
+    }
+});
+
+// 3. LOGOUT FUNCTION: Add this to your Logout link
+function logout() {
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('teacherName');
+    window.location.href = "login.html";
+}
+    </script>
     <script src="script.js"></script>
 </body>
 </html>
