@@ -11,6 +11,8 @@ function getTargetUrl() {
         gid = "2072343238"; 
     } else if (pageName === "restaurant.html") { 
         gid = "1968398657"; 
+    } else if (pageName === "sports-lesson.html") { 
+        gid = "1523259985"; 
     }
     
     return `${BASE_CSV_URL}&gid=${gid}`;
@@ -22,6 +24,7 @@ let normalTexts = [];
 let voices = [];
 let currentLine = 0;
 let isSpeaking = false; 
+
 
 // ================= 1. FETCH & PARSE =================
 async function loadData() {
@@ -40,6 +43,9 @@ async function loadData() {
             }
         }
         if (quizData.length > 0) loadQuestion();
+
+        loadNoteFromSheet(); 
+
     } catch (e) { console.error("Connection Error:", e); }
 }
 
@@ -211,7 +217,6 @@ function renderQuestionElement(q, realIndex, displayNum, shuffledDefs) {
                    style="border:none; border-radius: 5px; border-bottom:2px solid #007bff; width:140px; text-align:center; background: #fffdec; font-size:1em; font-weight:bold;"> ${parts[1] || ""}</p>
             <div id="fb-${realIndex}" style="font-weight:bold; margin-top:5px; font-size:0.9em;"></div>`;
     } 
-    // UPDATED SPELLING RENDERER TO SHOW THE HINT (Column B)
     else if (q.type === "SPELLING") {
         qDiv.innerHTML = `
             <p><strong>${displayNum}. Spell the word for:</strong> <br>
@@ -253,7 +258,7 @@ function addSectionControls(container, idx) {
     container.lastChild.appendChild(div);
 }
 
-// ================= 5. SUBMIT WITH GRADING & REMARKS =================
+// ================= 5. SUBMIT WITH GRADING =================
 function submitSection(sIdx) {
     const section = document.getElementById(`section-${sIdx}`);
     let score = 0, total = 0;
@@ -336,6 +341,60 @@ function resetSection(sIdx) {
     if (scoreDiv) scoreDiv.style.display = "none";
 }
 
+
+// ================= 6. GOOGLE SHEETS NOTES FUNCTION =================
+const NOTES_API_URL = "https://script.google.com/macros/s/AKfycbzUjqLmVS0BitOmvONNOBkct1Fnp--Jp63cPhJQmjB_RQTLMVPQhmtBMhMI_zcGRtIv/exec";
+const noteArea = document.getElementById('sticky-notes');
+const saveStatus = document.getElementById('save-status');
+
+async function loadNoteFromSheet() {
+    if(!noteArea) return;
+    try {
+        const response = await fetch(NOTES_API_URL);
+        const data = await response.text();
+        noteArea.value = data;
+        if(saveStatus) saveStatus.innerText = "Notes synced";
+    } catch (err) { console.error("Note load failed"); }
+}
+
+async function saveNoteToSheet() {
+    if(!noteArea) return;
+    if(saveStatus) saveStatus.innerText = "Saving...";
+    try {
+        await fetch(NOTES_API_URL, {
+            method: "POST",
+            body: JSON.stringify({ action: "update", note: noteArea.value })
+        });
+        if(saveStatus) saveStatus.innerText = "Saved to Cloud ✅";
+    } catch (err) { if(saveStatus) saveStatus.innerText = "Sync Error ❌"; }
+}
+
+async function deleteNoteFromSheet() {
+    if(!confirm("Clear all notes?")) return;
+    if(saveStatus) saveStatus.innerText = "Deleting...";
+    try {
+        await fetch(NOTES_API_URL, {
+            method: "POST",
+            body: JSON.stringify({ action: "delete" })
+        });
+        noteArea.value = "";
+        if(saveStatus) saveStatus.innerText = "Notes cleared";
+    } catch (err) { if(saveStatus) saveStatus.innerText = "Error"; }
+}
+
+document.getElementById('save-note')?.addEventListener('click', saveNoteToSheet);
+document.getElementById('delete-note')?.addEventListener('click', deleteNoteFromSheet);
+
+let noteTimeout = null;
+noteArea?.addEventListener('keyup', () => {
+    clearTimeout(noteTimeout);
+    if(saveStatus) saveStatus.innerText = "Typing...";
+    noteTimeout = setTimeout(saveNoteToSheet, 2000);
+});
+
+
+
+// ================= INITIALIZATION =================
 function loadVoices() { voices = speechSynthesis.getVoices().filter(v => v.lang.includes('en')); }
 speechSynthesis.onvoiceschanged = loadVoices;
 window.onload = loadData;
@@ -343,28 +402,58 @@ window.onload = loadData;
 function updatePHTime() {
     const timeElement = document.getElementById('ph-time');
     const dateElement = document.getElementById('ph-date');
-
     const now = new Date();
-
-    const timeOptions = {
-        timeZone: 'Asia/Manila',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: true
-    };
-
-    const dateOptions = {
-        timeZone: 'Asia/Manila',
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    };
-
+    const timeOptions = { timeZone: 'Asia/Manila', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
+    const dateOptions = { timeZone: 'Asia/Manila', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     if(timeElement) timeElement.textContent = now.toLocaleTimeString('en-US', timeOptions);
     if(dateElement) dateElement.textContent = now.toLocaleDateString('en-US', dateOptions).toUpperCase();
 }
 
 setInterval(updatePHTime, 1000);
 updatePHTime();
+
+// ================= 7. THEME SETTINGS (DARK/LIGHT TOGGLE) =================
+// Wrapped in a function to ensure it doesn't block the Spreadsheet loading
+function initializeTheme() {
+    const settingsLink = document.getElementById('settings-link');
+
+    function updateThemeUI(isDark) {
+        if (isDark) {
+            document.body.classList.add('dark-mode');
+        } else {
+            document.body.classList.remove('dark-mode');
+        }
+
+        if (settingsLink) {
+            const icon = settingsLink.querySelector('i');
+            if (icon) {
+                if (isDark) {
+                    icon.className = 'fa-solid fa-sun';
+                    if (settingsLink.lastChild && settingsLink.lastChild.nodeType === 3) {
+                        settingsLink.lastChild.textContent = ' Light Mode';
+                    }
+                } else {
+                    icon.className = 'fa-solid fa-moon';
+                    if (settingsLink.lastChild && settingsLink.lastChild.nodeType === 3) {
+                        settingsLink.lastChild.textContent = ' Dark Mode';
+                    }
+                }
+            }
+        }
+    }
+
+    const savedTheme = localStorage.getItem('dashboard-theme') || 'light';
+    updateThemeUI(savedTheme === 'dark');
+
+    if (settingsLink) {
+        settingsLink.onclick = function(e) {
+            e.preventDefault();
+            const isNowDark = !document.body.classList.contains('dark-mode');
+            localStorage.setItem('dashboard-theme', isNowDark ? 'dark' : 'light');
+            updateThemeUI(isNowDark);
+        };
+    }
+}
+
+// Call the theme initializer
+initializeTheme();
