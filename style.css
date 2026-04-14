@@ -415,46 +415,6 @@ p {
 .book-cover {
     border-radius: 50%;
 }
-/* Ensure the voice container can handle multiple rows of speakers */
-#voice-controls-container {
-    display: flex;
-    flex-wrap: wrap; /* Allows speakers to move to the next line on small screens */
-    gap: 10px;
-    align-items: center;
-}
-
-/* Style the individual speaker/voice controls if they are buttons or selects */
-#voice-controls-container select, 
-#voice-controls-container button {
-    padding: 8px;
-    border-radius: 6px;
-    border: 1px solid var(--border);
-    background: var(--card-bg);
-    color: var(--text-main);
-}
-
-/* Fix the Action Buttons (Play/Stop) for Mobile */
-.action-buttons {
-    display: flex;
-    gap: 10px;
-    margin-top: 15px;
-}
-
-@media (max-width: 600px) {
-    .action-buttons {
-        flex-direction: column; /* Stack Play and Stop buttons on top of each other */
-    }
-    
-    .action-buttons button {
-        width: 100%; /* Make buttons full width for easy tapping */
-        justify-content: center;
-    }
-
-    #voice-controls-container {
-        flex-direction: column;
-        align-items: stretch;
-    }
-}
 
 /* ==========================================================================
    7. MOBILE RESPONSIVENESS
