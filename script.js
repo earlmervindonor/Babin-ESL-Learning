@@ -13,6 +13,8 @@ function getTargetUrl() {
         gid = "1968398657"; 
     } else if (pageName === "sports-lesson.html") { 
         gid = "1523259985"; 
+    }else if (pageName === "library.html") { 
+        gid = "793325724"; 
     }
     
     return `${BASE_CSV_URL}&gid=${gid}`;
@@ -222,7 +224,7 @@ function renderQuestionElement(q, realIndex, displayNum, shuffledDefs) {
             <p><strong>${displayNum}. Spell the word for:</strong> <br>
             <span style="color:#007bff; font-size:1.1em; font-weight:bold; display:block; margin: 10px 0;">"${q.hint}"</span></p>
             <input type="text" id="spelling-${realIndex}" 
-                   placeholder="Type correct spelling..."
+                   placeholder="Type the correct spelling..."
                    style="border:none; border-bottom:2px solid #28a745; width:220px; text-align:center; background: #f0fff4; font-size:1em; font-weight:bold; outline:none; padding:5px;">
             <div id="fb-${realIndex}" style="font-weight:bold; margin-top:5px; font-size:0.9em;"></div>`;
     }
