@@ -1,3 +1,33 @@
+/* Container for the lesson image */
+.lesson-cover-page {
+    width: 100%;
+    margin: 20px 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Universal rule for the actual image */
+.lesson-cover-page img {
+    /* This is the most important part for mobile */
+    max-width: 100%; 
+    height: auto;
+    
+    /* Aesthetics to match your luxurious dashboard theme */
+    display: block;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* Adds a nice depth */
+    
+    /* Ensures the image doesn't get blurry if it's small */
+    object-fit: contain; 
+}
+
+/* Optional: Add this if you want a hover effect like your other buttons */
+.lesson-cover-page img:hover {
+    transform: scale(1.01);
+    transition: transform 0.3s ease;
+}
+
 ol {
     list-style-type: none;
     counter-reset: lesson-counter;
