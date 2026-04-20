@@ -3,7 +3,7 @@ const BASE_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSLCn5weZR
 
 function getTargetUrl() {
     const pageName = window.location.pathname.split("/").pop();
-    let gid = "439461232"; // Default sheet (Home/General)
+    let gid = "439461232"; 
     
     if (pageName === "work-life-balance.html") { 
         gid = "2001320284"; 
@@ -415,7 +415,6 @@ setInterval(updatePHTime, 1000);
 updatePHTime();
 
 // ================= 7. THEME SETTINGS (DARK/LIGHT TOGGLE) =================
-// Wrapped in a function to ensure it doesn't block the Spreadsheet loading
 function initializeTheme() {
     const settingsLink = document.getElementById('settings-link');
 
@@ -457,5 +456,4 @@ function initializeTheme() {
     }
 }
 
-// Call the theme initializer
 initializeTheme();
