@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESL Pro Tool - Active Listening</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<style>
+
+</style>
+
+<body>
+
+    <div class="sidebar-overlay" id="overlay"></div>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+        <div class="logo">ESL PRO TOOL</div>
+        <nav>
+            <a href="index.html" class="side-link"><i class="fa-solid fa-house"></i> Dashboard</a>
+            <a href="books.html" class="side-link active"><i class="fa-solid fa-book"></i> Lessons</a>
+            <a href="progress.html" class="side-link"><i class="fa-solid fa-chart-line"></i> Progress</a>
+            <a href="#" class="side-link" id="settings-link"><i class="fa-solid fa-moon"></i> Dark Mode</a>
+            <a href="#" onclick="logout()" class="side-link" style="margin-top: 20px; color: #f87171;"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <!-- TOP NAV -->
+        <header class="top-nav">
+            <div class="menu-toggle" id="menu-btn"><i class="fa-solid fa-bars"></i></div>
+            <div class="user-profile" style="display: flex; align-items: center; gap: 10px; margin-left: auto;">
+                <span style="font-weight: 600; font-size: 14px;">Teacher Shein</span>
+                <i class="fa-solid fa-circle-user fa-xl"></i>
+            </div>
+        </header>
+
+        <div class="container">
+            <!-- LESSON HEADER -->
+            <div class="card" id="text-section">
+                <h1>At the bus stop</h1>
+                <hr>
+                <p>Lesson target: Reading, Speaking and listening</p>
+                <div class="lesson-cover-page">
+                    <img src="https://drive.google.com/thumbnail?id=1dND8DjpoRlnfcY4pviqpl0iQjad5z_E0&sz=w1000" alt="Lesson Image">
+                </div>
+                <div id="text-container"></div>
+            </div>
+
+            <!-- DIALOGUE SECTION -->
+            <div class="card">
+                <h2 style="color: var(--primary); margin-bottom: 20px;">Dialogue Practice 🎭</h2>
+                <div class="video-container">
+                    <iframe 
+                        src="https://www.youtube.com/embed/hg8QJOa7QOI"
+                        title="YouTube video player" 
+                        frameborder="0" 
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                        allowfullscreen>
+                    </iframe>
+                </div>
+                
+                <div id="voice-controls-container" style="margin: 20px 0;">
+                    <p style="color: var(--text-muted);">Loading speakers...</p>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn-primary" onclick="playDialogue()"><i class="fa-solid fa-play"></i> Play All</button>
+                    <button class="btn-secondary" onclick="stopDialogue()"><i class="fa-solid fa-stop"></i> Stop</button>
+                </div>
+                
+                <div id="fullDialogue" style="margin-top:20px;"></div>
+            </div>
+
+            <!-- QUIZ SECTION -->
+            <div class="card" id="quiz-container">
+                <h2>📝 Quiz Practice</h2>
+                <div id="quiz-list"></div>
+                <div class="action-buttons" style="justify-content: center; margin-top: 20px;">
+                    <button class="btn-primary" id="submit-btn" onclick="submitQuiz()" style="display:none;">Submit All Answers</button>
+                    <button class="btn-secondary" id="reset-btn" onclick="resetQuiz()" style="display:none;">Reset Quiz</button>
+                </div>
+                <div id="quiz-result" style="margin-top: 20px; font-weight: bold; text-align: center;"></div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Sidebar Toggle
+        const menuBtn = document.getElementById('menu-btn');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
+
+        menuBtn.onclick = () => { sidebar.classList.add('active'); overlay.classList.add('active'); };
+        overlay.onclick = () => { sidebar.classList.remove('active'); overlay.classList.remove('active'); };
+
+        // Theme Toggle
+        const settingsLink = document.getElementById('settings-link');
+        function updateThemeUI(isDark) {
+            const icon = settingsLink.querySelector('i');
+            if (isDark) {
+                document.body.classList.add('dark-mode');
+                icon.className = 'fa-solid fa-sun';
+                settingsLink.childNodes[settingsLink.childNodes.length - 1].textContent = ' Light Mode';
+            } else {
+                document.body.classList.remove('dark-mode');
+                icon.className = 'fa-solid fa-moon';
+                settingsLink.childNodes[settingsLink.childNodes.length - 1].textContent = ' Dark Mode';
+            }
+        }
+        settingsLink.onclick = (e) => {
+            e.preventDefault();
+            const isDark = !document.body.classList.contains('dark-mode');
+            localStorage.setItem('dashboard-theme', isDark ? 'dark' : 'light');
+            updateThemeUI(isDark);
+        };
+        const savedTheme = localStorage.getItem('dashboard-theme') || 'light';
+        updateThemeUI(savedTheme === 'dark');
+    </script>
+    <script src="script.js"></script>
+</body>
+</html>
