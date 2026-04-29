@@ -1,21 +1,3 @@
-:root {
-    /* Lexend is amazing for reading fluency; 
-       Inter is the professional fallback */
-    --font-main: 'Lexend', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-body {
-    font-family: var(--font-main);
-    letter-spacing: 0.01em; /* Slight spacing helps ESL word recognition */
-}
-
-p {
-    font-size: 1.1rem; /* Slightly larger than standard 16px */
-    line-height: 1.8;   /* Essential for preventing "line-skipping" */
-    color: #334155;    /* Dark gray is easier on eyes than pure black */
-}
-
-/* Container for the lesson image */
 .lesson-cover-page {
     width: 100%;
     margin: 20px 0;
@@ -24,7 +6,6 @@ p {
     align-items: center;
 }
 
-/* Universal rule for the actual image */
 .lesson-cover-page img {
     max-width: 100%; 
     height: auto;
@@ -52,17 +33,17 @@ ol li {
 }
 .card ol { 
     list-style-type: none;
-    counter-reset: lesson-counter 0; 
+    counter-reset: lesson-counter 0;
     padding-left: 0;
 }
 .card ol li {
     counter-increment: lesson-counter;
     position: relative;
-    margin-bottom: 8px; 
+    margin-bottom: 8px;
 }
 
 .ph-clock-widget {
-    background: #007bff; 
+    background: #007bff;
     color: white;
     padding: 15px;
     border-radius: 12px;
@@ -83,7 +64,7 @@ ol li {
 #ph-time {
     font-size: 1.5rem;
     font-weight: 800;
-    font-family: monospace; 
+    font-family: monospace;
 }
 
 .ph-label {
@@ -94,9 +75,7 @@ ol li {
     font-weight: bold;
 }
 
-/* ==========================================================================
-   1. GENERAL STYLES & RESET
-   ========================================================================== */
+
 body {
     margin: 0;
     font-family: Arial, sans-serif;
@@ -113,9 +92,7 @@ hr {
     border-top: 1px solid #eee;
 }
 
-/* ==========================================================================
-   2. NAVBAR STYLES
-   ========================================================================== */
+
 .navbar {
     width: 100%;
     height: 60px;
@@ -165,20 +142,18 @@ hr {
     display: none;
 }
 
-/* ==========================================================================
-   3. LESSON CARD & CONTENT
-   ========================================================================== */
+
 .card {
-    background: white;
-    max-width: 1000px; /* Increased for full-scale feel */
-    width: 95%;      
+    background: var(white);
+    max-width: 900px; 
+    width: 100%;      
     margin: 30px auto;
-    padding: 30px;    
+    padding: 24px;   
     border-radius: 16px;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     position: relative;
     border: 1px solid var(--border);
-    overflow: visible !important; 
+    overflow: hidden; 
 }
 
 h2 {
@@ -205,9 +180,8 @@ p {
 }
 
 .listening-skills {
-    max-width: 600px; /* Increased slightly for scale */
-    width: 100%;
-    height: auto;
+    width: 500px;
+    height: 300px;
     margin: 20px auto; 
     overflow: hidden;
     border-radius: 8px;
@@ -216,27 +190,24 @@ p {
 .listening-skills img {
     width: 100%;
     height: 100%;
-    object-fit: cover; 
+    object-fit: cover;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
-/* ==========================================================================
-   4. BUTTONS & CONTROLS
-   ========================================================================== */
 .button-class {
     display: flex !important;
     align-items: center;
-    width: 100% !important; /* Full width inside its container */
+    width: auto !important;
     background-color: white !important;
     color: #333 !important;
-    padding: 12px 20px !important; 
+    padding: 8px 15px !important;
     border-radius: 10px !important;
     border: 1px solid #eee !important;
     box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
     transition: all 0.2s ease !important;
     text-align: left;
     cursor: pointer;
-    gap: 15px;
+    gap: 12px;
 }
 
 .button-class:hover {
@@ -245,18 +216,20 @@ p {
     transform: translateX(4px);
 }
 
+
 .button-class::before {
     content: counter(lesson-counter, decimal-leading-zero);
     font-size: 1.4rem; 
     font-weight: 800;
     color: #007bff;
     font-family: Arial, sans-serif;
-    min-width: 35px; 
+    min-width: 35px;
     display: inline-block;
 }
 
+
 .book-cover {
-    width: 38px !important; 
+    width: 38px !important;
     height: 38px !important;
     object-fit: cover;
     border-radius: 50%;
@@ -279,7 +252,7 @@ p {
 }
 
 .button-class span {
-    font-size: 0.75rem; 
+    font-size: 0.75rem;
     color: #666;
 }
 
@@ -295,10 +268,15 @@ p {
     justify-content: center;
     border-radius: 6px;
     transition: 0.3s;
-    margin-left: auto;   
-    flex-shrink: 0;      
+    margin-left: auto; 
+    flex-shrink: 0; 
 }
 
+.button-class span {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
 .btn-thumb{
     border-radius: 5px;
 }
@@ -306,9 +284,7 @@ p {
     color: black;
     font-weight: bolder;
 }
-/* ==========================================================================
-   5. MENU HOVER TOOLTIP SYSTEM
-   ========================================================================== */
+
 .menu-tooltip {
     position: relative;
     display: inline-block;
@@ -325,10 +301,12 @@ p {
     border-radius: 15px; 
     padding: 15px;
     box-shadow: 0px 10px 25px rgba(0,0,0,0.15);
+    
     position: absolute;
     left: 50%;
     bottom: 130%; 
     transform: translateX(-50%) translateY(10px) scale(0.9);
+    
     z-index: 9999;
     pointer-events: none; 
     transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -378,15 +356,12 @@ p {
     color: #333;
 }
 
-/* ==========================================================================
-   6. BOOK GRID
-   ========================================================================== */
 .book-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 30px;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 25px;
     padding: 20px;
-    max-width: 1300px;
+    max-width: 1200px;
     margin: 0 auto;
 }
 
@@ -407,7 +382,7 @@ p {
 
 .book-image {
     width: 100%;
-    height: 350px; 
+    height: 300px;
     overflow: hidden;
     background-color: #f0f0f0;
 }
@@ -420,22 +395,25 @@ p {
 }
 
 .book-card:hover .book-image img {
-    transform: scale(1.1); 
+    transform: scale(1.1);
 }
 
 .book-info {
-    padding: 20px;
+    padding: 15px;
 }
 
 .view-btn {
     display: inline-block;
     background-color: #007bff;
     color: white;
-    padding: 12px 0;
+    padding: 10px 0;
     width: 90%;
     border-radius: 5px;
     font-weight: bold;
     margin-top: 10px;
+}
+.book-cover {
+    border-radius: 50%;
 }
 
 @media (min-width: 1025px) {
@@ -443,11 +421,9 @@ p {
     h2 { margin-left: 45px; } 
 }
 
-/* ==========================================================================
-   7. MOBILE RESPONSIVENESS
-   ========================================================================== */
+
 @media (max-width: 768px) {
-    .card { width: 95%; padding: 20px; }
+    .card { width: 95%; }
     .nav-btn { display: inline-block; }
     .nav-btn span { display: block; width: 25px; height: 3px; background: white; margin: 5px; }
     .nav-links {
@@ -465,13 +441,25 @@ p {
     
     .tooltip-box { 
         left: 50%; 
-        bottom: 115%; 
+        top: 110%; 
+        bottom: auto; 
         transform: translateX(-50%) scale(0.9); 
-        width: 280px; 
+        width: 95%; 
+    }
+    .tooltip-box::after, .tooltip-box::before {
+        top: -10px;
+        border-color: transparent transparent #007bff transparent;
+        bottom: auto;
+    }
+    .tooltip-box::before {
+        border-color: transparent transparent white transparent;
+        top: -8px;
+    }
+    .menu-tooltip:hover .tooltip-box {
+        transform: translateX(-50%) scale(1);
     }
 }
 
-/* --- CSS VARIABLES --- */
 :root {
     --primary: #2563eb;
     --bg: #f8fafc;
@@ -483,7 +471,6 @@ p {
     --border: #e2e8f0;
 }
 
-/* --- DARK MODE VARIABLES --- */
 body.dark-mode {
     --bg: #0f172a;
     --card-bg: #1e293b;
@@ -493,14 +480,21 @@ body.dark-mode {
     --border: #334155;
 }
 
-/* --- GLOBAL STYLES --- */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
-/* --- SIDEBAR --- */
+body {
+    background-color: var(--bg);
+    color: var(--text-main);
+    display: flex;
+    min-height: 100vh;
+    font-family: 'Inter', sans-serif;
+    transition: background 0.3s ease, color 0.3s ease;
+}
+
 .sidebar {
     width: var(--sidebar-width);
     background: var(--sidebar-bg);
@@ -537,19 +531,17 @@ body.dark-mode {
     color: white;
 }
 
-/* --- MAIN CONTENT & TOP NAV --- */
 .main-content {
     flex: 1;
     margin-left: var(--sidebar-width);
-    width: calc(100% - var(--sidebar-width)); /* Explicitly define width minus sidebar */
+    width: 100%;
     display: flex;
     flex-direction: column;
-    align-items: center; /* This centers the container horizontally within main-content */
 }
 
 .top-nav {
     background: var(--card-bg);
-    height: 64px; 
+    height: 64px;
     padding: 0 24px;
     display: flex;
     justify-content: space-between;
@@ -559,7 +551,6 @@ body.dark-mode {
     top: 0;
     z-index: 900;
     border-bottom: 1px solid var(--border);
-    width: 100%; /* Ensure navbar stays full width */
 }
 
 .menu-toggle {
@@ -575,17 +566,25 @@ body.dark-mode {
     gap: 10px;
 }
 
-/* --- CONTENT CONTAINER --- */
 .container {
     padding: 24px;
-    max-width: 1300px; /* Increased for full-scale feel */
-    margin: 0 auto;    /* Centers the container */
+    max-width: 1100px;
+    margin: 0 auto;
     width: 100%;
 }
 
-h1 { font-size: 24px; font-weight: 700; }
+.card {
+    background: var(--card-bg);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 24px;
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
 
-/* --- VIDEO CONTAINER --- */
+h1 { font-size: 24px; font-weight: 700; }
+hr { margin: 16px 0; border: 0; border-top: 1px solid var(--border); }
+
 .video-container {
     position: relative;
     padding-bottom: 56.25%; 
@@ -593,7 +592,6 @@ h1 { font-size: 24px; font-weight: 700; }
     overflow: hidden;
     border-radius: 12px;
     background: #000;
-    width: 100%;
 }
 
 .video-container iframe {
@@ -604,7 +602,6 @@ h1 { font-size: 24px; font-weight: 700; }
     height: 100%;
 }
 
-/* --- BUTTONS --- */
 .action-buttons {
     display: flex;
     gap: 12px;
@@ -629,14 +626,10 @@ h1 { font-size: 24px; font-weight: 700; }
     cursor: pointer;
 }
 
-/* --- MOBILE RESPONSIVE --- */
 @media (max-width: 1024px) {
     .sidebar { transform: translateX(-100%); }
     .sidebar.active { transform: translateX(0); }
-    .main-content { 
-        margin-left: 0; 
-        width: 100%; /* Reset to full width when sidebar is hidden */
-    }
+    .main-content { margin-left: 0; }
     .menu-toggle { display: block; }
 }
 
