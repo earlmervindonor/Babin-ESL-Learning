@@ -17,6 +17,8 @@ function getTargetUrl() {
         gid = "793325724"; 
     }else if (pageName === "bus-stop.html") { 
         gid = "2010016043"; 
+    }else if (pageName === "super-market.html") { 
+        gid = "1566605369"; 
     }
 
     
