@@ -19,7 +19,10 @@ function getTargetUrl() {
         gid = "2010016043"; 
     }else if (pageName === "super-market.html") { 
         gid = "1566605369"; 
+    }else if (pageName === "kitchen-cooking.html") { 
+        gid = "940942358"; 
     }
+
 
     
     return `${BASE_CSV_URL}&gid=${gid}`;
