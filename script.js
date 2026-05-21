@@ -3,7 +3,7 @@ const BASE_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSLCn5weZR
 
 function getTargetUrl() {
     const pageName = window.location.pathname.split("/").pop();
-    let gid = "439461232"; 
+    let gid = "439461232"; // Default sheet (Home/General)
     
     if (pageName === "work-life-balance.html") { 
         gid = "2001320284"; 
@@ -21,9 +21,9 @@ function getTargetUrl() {
         gid = "1566605369"; 
     }else if (pageName === "kitchen-cooking.html") { 
         gid = "940942358"; 
+    }else if (pageName === "park.html") { 
+        gid = "880505373"; 
     }
-
-
     
     return `${BASE_CSV_URL}&gid=${gid}`;
 }
@@ -83,6 +83,9 @@ function parseCSV(text) {
         } 
         else if (type === "SPELLING") {
             quizData.push({ type: "SPELLING", hint: cleanCols[1], correctAnswer: cleanCols[2]?.toLowerCase().trim() });
+        }
+        else if (type === "SCRAMBLE") {
+            quizData.push({ type: "SCRAMBLE", hint: cleanCols[1], correctAnswer: cleanCols[2]?.trim() });
         }
     });
 }
@@ -166,6 +169,53 @@ function speakLine() {
     speechSynthesis.speak(ut);
 }
 
+// Helper function to handle word scrambling safely
+function scrambleWordPhrase(phrase) {
+    return phrase.split(' ').map(word => {
+        if (word.length <= 1) return word;
+        let letters = word.split('');
+        for (let i = letters.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [letters[i], letters[j]] = [letters[j], letters[i]];
+        }
+        let scrambled = letters.join('');
+        if (scrambled === word) {
+            return word.substring(1) + word.charAt(0);
+        }
+        return scrambled;
+    }).join(' ');
+}
+
+// Handler logic for clicking interaction on letter blocks
+function handleScrambleLetterClick(letterEl, realIndex) {
+    const targetBox = document.getElementById(`scramble-target-${realIndex}`);
+    const poolBox = document.getElementById(`scramble-pool-${realIndex}`);
+    const hiddenInput = document.getElementById(`scramble-${realIndex}`);
+    const placeholder = document.getElementById(`placeholder-${realIndex}`);
+
+    if (placeholder) placeholder.style.display = 'none';
+
+    // Toggle location between pool box and assignment zone
+    if (letterEl.parentNode === poolBox) {
+        targetBox.appendChild(letterEl);
+        letterEl.style.backgroundColor = '#28a745'; // Highlight positive change
+    } else {
+        poolBox.appendChild(letterEl);
+        letterEl.style.backgroundColor = '#e67e22'; // Revert back to baseline color
+    }
+
+    // Build the string representation to pass on to the submission field
+    const currentLetters = Array.from(targetBox.querySelectorAll('span:not(#placeholder-' + realIndex + ')'))
+                                .map(el => el.getAttribute('data-letter'));
+    hiddenInput.value = currentLetters.join('');
+
+    // Restore contextual text helper if user clears the board
+    if (currentLetters.length === 0 && placeholder) {
+        placeholder.style.display = 'block';
+    }
+}
+
+
 // ================= 4. QUIZ LOGIC =================
 function loadQuestion() {
     const container = document.getElementById("quiz-list");
@@ -236,6 +286,30 @@ function renderQuestionElement(q, realIndex, displayNum, shuffledDefs) {
                    style="border:none; border-bottom:2px solid #28a745; width:220px; text-align:center; background: #f0fff4; font-size:1em; font-weight:bold; outline:none; padding:5px;">
             <div id="fb-${realIndex}" style="font-weight:bold; margin-top:5px; font-size:0.9em;"></div>`;
     }
+    // Interactive, dynamic click block grid implementation for SCRAMBLE questions
+    else if (q.type === "SCRAMBLE") {
+        const scrambledText = scrambleWordPhrase(q.correctAnswer);
+        const letterArray = scrambledText.replace(/\s/g, '').split(''); 
+
+        qDiv.innerHTML = `
+            <p><strong>${displayNum}. Arrange the scrambled letters correctly:</strong> <br>
+            <span style="font-size:0.85em; color:#555; display:block; margin-bottom:5px;">Hint: ${q.hint}</span></p>
+            
+            <div id="scramble-target-${realIndex}" style="display: flex; gap: 8px; flex-wrap: wrap; min-height: 45px; padding: 10px; border: 2px dashed #e67e22; border-radius: 8px; background: #fffdf9; margin-bottom: 12px; align-items: center;">
+                <span style="color: #aaa; font-style: italic; font-size: 0.9em;" id="placeholder-${realIndex}">Click letters below to arrange...</span>
+            </div>
+
+            <div id="scramble-pool-${realIndex}" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px;">
+                ${letterArray.map((letter) => `
+                    <span onclick="handleScrambleLetterClick(this, ${realIndex})" 
+                          data-letter="${letter}" 
+                          style="display: inline-flex; align-items: center; justify-content: center; width: 35px; height: 35px; font-size: 1.1em; font-weight: bold; color: #fff; background-color: #e67e22; border-radius: 6px; cursor: pointer; user-select: none; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: transform 0.1s;">${letter}</span>
+                `).join('')}
+            </div>
+            
+            <input type="hidden" id="scramble-${realIndex}" value="">
+            <div id="fb-${realIndex}" style="font-weight:bold; margin-top:5px; font-size:0.9em;"></div>`;
+    }
     else if (q.type === "MATCHING") {
         qDiv.innerHTML = `
             <div style="display: flex; align-items: center; justify-content: space-between; gap: 15px;">
@@ -281,6 +355,7 @@ function submitSection(sIdx) {
         const blank = section.querySelector(`#blank-${idx}`);
         const radio = section.querySelector(`input[name="question${idx}"]`);
         const match = section.querySelector(`#match-${idx}`);
+        const scramble = section.querySelector(`#scramble-${idx}`);
 
         if (spelling) {
             total++;
@@ -288,6 +363,14 @@ function submitSection(sIdx) {
                 score++; fb.innerHTML="Correct! ✨"; fb.style.color="#28a745";
             } else {
                 fb.innerHTML=`Incorrect. Correct spelling: "${q.correctAnswer}"`; fb.style.color="#dc3545";
+            }
+        }
+        else if (scramble) {
+            total++;
+            if (scramble.value.toLowerCase().trim() === q.correctAnswer.toLowerCase().trim()) {
+                score++; fb.innerHTML="Correct! ✨"; fb.style.color="#28a745";
+            } else {
+                fb.innerHTML=`Incorrect. The correct phrase is: "${q.correctAnswer}"`; fb.style.color="#dc3545";
             }
         }
         else if (blank) {
@@ -347,6 +430,25 @@ function resetSection(sIdx) {
     section.querySelectorAll('select').forEach(s => s.selectedIndex = 0);
     section.querySelectorAll('[id^="fb-"]').forEach(f => f.innerHTML="");
     section.querySelectorAll('[id^="label-q"]').forEach(l => l.style.background = "none");
+    
+    // Custom structural reset processing for the interactive block workspace
+    section.querySelectorAll('[id^="scramble-target-"]').forEach(target => {
+        const realIndex = target.id.split('-').pop();
+        const pool = section.querySelector(`#scramble-pool-${realIndex}`);
+        const hiddenInput = section.querySelector(`#scramble-${realIndex}`);
+        const placeholder = section.querySelector(`#placeholder-${realIndex}`);
+        
+        if (pool && hiddenInput) {
+            const letters = target.querySelectorAll('span:not([id^="placeholder-"])');
+            letters.forEach(letter => {
+                letter.style.backgroundColor = '#e67e22';
+                pool.appendChild(letter);
+            });
+            hiddenInput.value = "";
+            if (placeholder) placeholder.style.display = 'block';
+        }
+    });
+
     const scoreDiv = document.getElementById(`score-${sIdx}`);
     if (scoreDiv) scoreDiv.style.display = "none";
 }
