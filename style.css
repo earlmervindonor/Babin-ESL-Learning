@@ -6,6 +6,88 @@
     align-items: center;
 }
 
+/* Container for the specific line-drawing questions */
+.line-quiz-container {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 60px;
+    margin: 20px 0;
+    padding: 15px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+}
+
+/* Layered SVG canvas stretching across the background */
+.line-quiz-svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none; /* Allows user to click elements underneath */
+    z-index: 1;
+}
+
+.line-quiz-column {
+    display: flex;
+    flex-direction: column;
+    width: 45%;
+    z-index: 2;
+}
+
+.line-quiz-item {
+    position: relative;
+    padding: 12px 20px;
+    margin: 8px 0;
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+}
+
+.line-quiz-column-left .line-quiz-item { justify-content: space-between; }
+.line-quiz-column-right .line-quiz-item { justify-content: flex-start; }
+
+/* Interactive Connecting Anchors */
+.quiz-anchor-dot {
+    width: 12px;
+    height: 12px;
+    background-color: #007bff;
+    border-radius: 50%;
+    position: absolute;
+    cursor: pointer;
+    transition: transform 0.2s, background-color 0.2s;
+    box-shadow: 0 0 4px rgba(0,0,0,0.2);
+}
+
+.quiz-anchor-dot:hover {
+    transform: scale(1.4);
+    background-color: #28a745;
+}
+
+.line-quiz-column-left .quiz-anchor-dot {
+    right: -6px;
+    top: calc(50% - 6px);
+}
+
+.line-quiz-column-right .quiz-anchor-dot {
+    left: -6px;
+    top: calc(50% - 6px);
+}
+
+.quiz-anchor-dot.active-link {
+    background-color: #e67e22;
+    box-shadow: 0 0 8px #e67e22;
+}
+
+.quiz-anchor-dot.linked {
+    background-color: #28a745;
+}
 .lesson-cover-page img {
     max-width: 100%; 
     height: auto;
