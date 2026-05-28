@@ -24,6 +24,9 @@ function getTargetUrl() {
     }else if (pageName === "park.html") { 
         gid = "880505373"; 
     }
+    else if (pageName === "museums.html") { 
+        gid = "131366028"; 
+    }
     
     return `${BASE_CSV_URL}&gid=${gid}`;
 }
@@ -312,14 +315,30 @@ function renderQuestionElement(q, realIndex, displayNum, shuffledDefs) {
     }
     else if (q.type === "MATCHING") {
         qDiv.innerHTML = `
-            <div style="display: flex; align-items: center; justify-content: space-between; gap: 15px;">
-                <span style="font-weight: bold;">${q.term}</span>
-                <select id="match-${realIndex}" style="padding: 8px; border-radius: 5px; border: 1px solid #007bff; font-size:1em; font-weight:bold; text-align:center;">
-                    <option value="">-- Choose Definition --</option>
-                    ${shuffledDefs.map(d => `<option value="${d}">${d}</option>`).join('')}
-                </select>
+            <div class="line-quiz-container" id="line-quiz-${realIndex}">
+                <svg class="line-quiz-svg" id="svg-${realIndex}"></svg>
+                
+                <div class="line-quiz-column line-quiz-column-left">
+                    <div class="line-quiz-item">
+                        <span><strong>${displayNum}.</strong> ${q.term}</span>
+                        <div class="quiz-anchor-dot source-dot" data-idx="${realIndex}" data-val="${q.term}"></div>
+                    </div>
+                </div>
+
+                <div class="line-quiz-column line-quiz-column-right">
+                    ${shuffledDefs.map(d => `
+                        <div class="line-quiz-item">
+                            <div class="quiz-anchor-dot target-dot" data-idx="${realIndex}" data-val="${d}"></div>
+                            <span>${d}</span>
+                        </div>
+                    `).join('')}
+                </div>
             </div>
-            <div id="fb-${realIndex}" style="font-weight:bold; font-size:0.9em; text-align: right;"></div>`;
+            <input type="hidden" id="match-${realIndex}" value="">
+            <div id="fb-${realIndex}" style="font-weight:bold; font-size:0.9em; text-align: right; margin-top:5px;"></div>
+        `;
+
+        setTimeout(() => connectQuizThreads(realIndex), 50);
     } else {
         qDiv.innerHTML = `<h4>${displayNum}. ${q.question}</h4>`;
         q.choices.forEach((choice, cIndex) => {
@@ -360,7 +379,7 @@ function submitSection(sIdx) {
         if (spelling) {
             total++;
             if (spelling.value.toLowerCase().trim() === q.correctAnswer) {
-                score++; fb.innerHTML="Correct! ✨"; fb.style.color="#28a745";
+                score++; fb.innerHTML="✓ Correct! ✨"; fb.style.color="#28a745";
             } else {
                 fb.innerHTML=`Incorrect. Correct spelling: "${q.correctAnswer}"`; fb.style.color="#dc3545";
             }
@@ -368,7 +387,7 @@ function submitSection(sIdx) {
         else if (scramble) {
             total++;
             if (scramble.value.toLowerCase().trim() === q.correctAnswer.toLowerCase().trim()) {
-                score++; fb.innerHTML="Correct! ✨"; fb.style.color="#28a745";
+                score++; fb.innerHTML="✓ Correct! ✨"; fb.style.color="#28a745";
             } else {
                 fb.innerHTML=`Incorrect. The correct phrase is: "${q.correctAnswer}"`; fb.style.color="#dc3545";
             }
@@ -376,14 +395,14 @@ function submitSection(sIdx) {
         else if (blank) {
             total++;
             if (blank.value.toLowerCase().trim() === q.correctAnswer) { 
-                score++; fb.innerHTML="Correct! ✨"; fb.style.color="#28a745"; 
+                score++; fb.innerHTML="✓ Correct! ✨"; fb.style.color="#28a745"; 
             } else { 
                 fb.innerHTML=`The correct answer is "${q.correctAnswer}"`; fb.style.color="#dc3545"; 
             }
         } else if (match) {
             total++;
             if (match.value === q.definition) { 
-                score++; fb.innerHTML="✓ Correct"; fb.style.color="#28a745"; 
+                score++; fb.innerHTML="✓ Correct ✨"; fb.style.color="#28a745"; 
             } else { 
                 fb.innerHTML=`The correct answer is "${q.definition}"`; fb.style.color="#dc3545"; 
             }
@@ -393,7 +412,7 @@ function submitSection(sIdx) {
             const isCorrect = sel && parseInt(sel.value) === q.correct;
             
             if (isCorrect) { 
-                score++; fb.innerHTML="Correct! ✨"; fb.style.color="#28a745";
+                score++; fb.innerHTML="✓ Correct! ✨"; fb.style.color="#28a745";
             } else { 
                 const correctText = q.choices[q.correct];
                 fb.innerHTML = `The correct answer is "${correctText}"`; 
@@ -447,6 +466,17 @@ function resetSection(sIdx) {
             hiddenInput.value = "";
             if (placeholder) placeholder.style.display = 'block';
         }
+    });
+
+    // Custom structural reset for line connection containers
+    section.querySelectorAll('.line-quiz-container').forEach(container => {
+        const index = container.id.split('-').pop();
+        savedThreadLinks[index] = null;
+        container.querySelectorAll('.quiz-anchor-dot').forEach(dot => {
+            dot.classList.remove('linked', 'active-link');
+        });
+        const svg = container.querySelector('.line-quiz-svg');
+        if (svg) svg.innerHTML = '';
     });
 
     const scoreDiv = document.getElementById(`score-${sIdx}`);
@@ -567,3 +597,107 @@ function initializeTheme() {
 }
 
 initializeTheme();
+
+
+// ================= 8. MATCHING QUESTION LINE WRAPPER ENGINE =================
+let drawingAnchor = null;
+let savedThreadLinks = {}; 
+
+function connectQuizThreads(index) {
+    const space = document.getElementById(`line-quiz-${index}`);
+    const svgLayer = document.getElementById(`svg-${index}`);
+    const hiddenInput = document.getElementById(`match-${index}`);
+    if (!space || !svgLayer) return;
+
+    let activeLine = null;
+
+    function refreshThreadLines() {
+        svgLayer.innerHTML = '';
+        const spaceRect = space.getBoundingClientRect();
+
+        if (savedThreadLinks[index]) {
+            const link = savedThreadLinks[index];
+            const p1 = getAnchorCenter(link.sourceEl, spaceRect);
+            const p2 = getAnchorCenter(link.targetEl, spaceRect);
+            appendSvgLine(p1.x, p1.y, p2.x, p2.y, '#28a745');
+        }
+    }
+
+    function appendSvgLine(x1, y1, x2, y2, color) {
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', x1);
+        line.setAttribute('y1', y1);
+        line.setAttribute('x2', x2);
+        line.setAttribute('y2', y2);
+        line.setAttribute('stroke', color);
+        line.setAttribute('stroke-width', '3');
+        line.setAttribute('stroke-linecap', 'round');
+        svgLayer.appendChild(line);
+        return line;
+    }
+
+    function getAnchorCenter(element, parentRect) {
+        const elRect = element.getBoundingClientRect();
+        return {
+            x: (elRect.left + elRect.width / 2) - parentRect.left,
+            y: (elRect.top + elRect.height / 2) - parentRect.top
+        };
+    }
+
+    space.addEventListener('mousedown', function(e) {
+        const targetDot = e.target;
+        if (!targetDot.classList.contains('source-dot') || targetDot.getAttribute('data-idx') != index) return;
+
+        e.preventDefault();
+        drawingAnchor = targetDot;
+        targetDot.classList.add('active-link');
+
+        if (savedThreadLinks[index]) {
+            savedThreadLinks[index].targetEl.classList.remove('linked');
+            savedThreadLinks[index] = null;
+            hiddenInput.value = '';
+        }
+        refreshThreadLines();
+
+        const spaceRect = space.getBoundingClientRect();
+        const startPt = getAnchorCenter(drawingAnchor, spaceRect);
+        activeLine = appendSvgLine(startPt.x, startPt.y, startPt.x, startPt.y, '#007bff');
+    });
+
+    document.addEventListener('mousemove', function(e) {
+        if (!drawingAnchor || drawingAnchor.getAttribute('data-idx') != index || !activeLine) return;
+
+        const spaceRect = space.getBoundingClientRect();
+        const currentX = e.clientX - spaceRect.left;
+        const currentY = e.clientY - spaceRect.top;
+
+        activeLine.setAttribute('x2', currentX);
+        activeLine.setAttribute('y2', currentY);
+    });
+
+    document.addEventListener('mouseup', function(e) {
+        if (!drawingAnchor || drawingAnchor.getAttribute('data-idx') != index) return;
+
+        const releaseDot = e.target;
+
+        if (releaseDot.classList.contains('target-dot') && releaseDot.getAttribute('data-idx') == index) {
+            savedThreadLinks[index] = {
+                sourceEl: drawingAnchor,
+                targetEl: releaseDot,
+                choiceVal: releaseDot.getAttribute('data-val')
+            };
+
+            drawingAnchor.classList.add('linked');
+            releaseDot.classList.add('linked');
+            hiddenInput.value = releaseDot.getAttribute('data-val');
+        }
+
+        drawingAnchor.classList.remove('active-link');
+        drawingAnchor = null;
+        activeLine = null;
+        refreshThreadLines();
+    });
+
+    window.addEventListener('resize', refreshThreadLines);
+    setTimeout(refreshThreadLines, 100);
+}
