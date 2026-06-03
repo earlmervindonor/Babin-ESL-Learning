@@ -23,10 +23,12 @@ function getTargetUrl() {
         gid = "940942358"; 
     }else if (pageName === "park.html") { 
         gid = "880505373"; 
-    }
-    else if (pageName === "museums.html") { 
+    }else if (pageName === "museums.html") { 
         gid = "131366028"; 
+    }else if (pageName === "school-life.html") { 
+        gid = "1750677535"; 
     }
+
     
     return `${BASE_CSV_URL}&gid=${gid}`;
 }
@@ -277,7 +279,7 @@ function renderQuestionElement(q, realIndex, displayNum, shuffledDefs) {
             <input type="text" id="blank-${realIndex}" 
                    ondragover="event.preventDefault()" 
                    ondrop="event.preventDefault(); this.value=event.dataTransfer.getData('text')"
-                   style="border:none; border-radius: 5px; border-bottom:2px solid #007bff; width:140px; text-align:center; background: #fffdec; font-size:1em; font-weight:bold;"> ${parts[1] || ""}</p>
+                   style="border:none; border-radius: 5px; border-bottom:2px solid #007bff; width:auto; text-align:center; background: #fffdec; font-size:1em; font-weight:bold;"> ${parts[1] || ""}</p>
             <div id="fb-${realIndex}" style="font-weight:bold; margin-top:5px; font-size:0.9em;"></div>`;
     } 
     else if (q.type === "SPELLING") {
