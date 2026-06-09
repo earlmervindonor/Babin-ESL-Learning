@@ -90,7 +90,7 @@ function parseCSV(text) {
             quizData.push({ type: "SPELLING", hint: cleanCols[1], correctAnswer: cleanCols[2]?.toLowerCase().trim() });
         }
         else if (type === "SCRAMBLE") {
-            quizData.push({ type: "SCRAMBLE", hint: cleanCols[1], correctAnswer: cleanCols[2]?.trim() });
+         quizData.push({ type: "SCRAMBLE", hint: cleanCols[1], correctAnswer: cleanCols[2]?.toUpperCase().trim() });
         }
     });
 }
@@ -140,58 +140,32 @@ function playDialogue() {
     speakLine(); 
 }
 
-function stopDialogue() { 
-    isSpeaking = false; 
-    speechSynthesis.cancel(); 
-    dialogue.forEach((_, i) => {
-        const el = document.getElementById(`line-${i}`);
-        if(el) el.style.background = "none";
-    });
-}
-
-function speakLine() {
-    if (!isSpeaking || currentLine >= dialogue.length) {
-        isSpeaking = false;
-        return;
-    }
-    
-    const line = dialogue[currentLine];
-    const ut = new SpeechSynthesisUtterance(line.text);
-    const sel = document.getElementById(`voice-for-${line.speaker}`);
-    if (sel && voices[sel.value]) ut.voice = voices[sel.value];
-
-    dialogue.forEach((_, i) => {
-        const el = document.getElementById(`line-${i}`);
-        if(el) el.style.background = (i === currentLine) ? "#e3f2fd" : "none";
-    });
-
-    ut.onend = () => { 
-        if (isSpeaking) {
-            currentLine++; 
-            speakLine(); 
-        }
-    };
-    speechSynthesis.speak(ut);
-}
-
-// Helper function to handle word scrambling safely
+// Optimized helper function to handle whole phrase shuffling safely
 function scrambleWordPhrase(phrase) {
-    return phrase.split(' ').map(word => {
-        if (word.length <= 1) return word;
-        let letters = word.split('');
+    if (!phrase || phrase.length <= 1) return phrase;
+    
+    let letters = phrase.split('');
+    let scrambled;
+    let attempts = 0;
+
+    // Perform standard Fisher-Yates shuffle on the entire sequence (including spaces)
+    do {
         for (let i = letters.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [letters[i], letters[j]] = [letters[j], letters[i]];
         }
-        let scrambled = letters.join('');
-        if (scrambled === word) {
-            return word.substring(1) + word.charAt(0);
-        }
-        return scrambled;
-    }).join(' ');
+        scrambled = letters.join('');
+        attempts++;
+    } while (scrambled === phrase && attempts < 20); // Prevent infinite loops but ensure it alternates
+
+    // Fallback if shuffle randomly hits perfect structure
+    if (scrambled === phrase) {
+        return phrase.substring(1) + phrase.charAt(0);
+    }
+    return scrambled;
 }
 
-// Handler logic for clicking interaction on letter blocks
+// Handler logic for clicking interaction on letter blocks (Adjusted to hide styling for space tokens inside target zone)
 function handleScrambleLetterClick(letterEl, realIndex) {
     const targetBox = document.getElementById(`scramble-target-${realIndex}`);
     const poolBox = document.getElementById(`scramble-pool-${realIndex}`);
@@ -200,13 +174,33 @@ function handleScrambleLetterClick(letterEl, realIndex) {
 
     if (placeholder) placeholder.style.display = 'none';
 
+    const isSpace = letterEl.getAttribute('data-letter') === ' ';
+
     // Toggle location between pool box and assignment zone
     if (letterEl.parentNode === poolBox) {
         targetBox.appendChild(letterEl);
-        letterEl.style.backgroundColor = '#28a745'; // Highlight positive change
+        
+        if (isSpace) {
+            // Make it look like an unstyled clear spacing bar within target box
+            letterEl.style.backgroundColor = 'transparent';
+            letterEl.style.boxShadow = 'none';
+            letterEl.style.color = 'transparent';
+            letterEl.style.border = 'none';
+        } else {
+            letterEl.style.backgroundColor = '#28a745'; // Highlight positive text element change
+        }
     } else {
         poolBox.appendChild(letterEl);
-        letterEl.style.backgroundColor = '#e67e22'; // Revert back to baseline color
+        
+        if (isSpace) {
+            // Restore normal slate look back in pool layout
+            letterEl.style.backgroundColor = '#7f8c8d';
+            letterEl.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+            letterEl.style.color = '#fff';
+            letterEl.style.border = 'none';
+        } else {
+            letterEl.style.backgroundColor = '#e67e22'; // Revert text element back to original base orange
+        }
     }
 
     // Build the string representation to pass on to the submission field
@@ -291,27 +285,36 @@ function renderQuestionElement(q, realIndex, displayNum, shuffledDefs) {
                    style="border:none; border-bottom:2px solid #28a745; width:220px; text-align:center; background: #f0fff4; font-size:1em; font-weight:bold; outline:none; padding:5px;">
             <div id="fb-${realIndex}" style="font-weight:bold; margin-top:5px; font-size:0.9em;"></div>`;
     }
-    // Interactive, dynamic click block grid implementation for SCRAMBLE questions
+    // Interactive, dynamic click block grid implementation for SCRAMBLE questions (Adjusted for spaces)
     else if (q.type === "SCRAMBLE") {
         const scrambledText = scrambleWordPhrase(q.correctAnswer);
-        const letterArray = scrambledText.replace(/\s/g, '').split(''); 
+        const letterArray = scrambledText.split(''); 
 
         qDiv.innerHTML = `
             <p><strong>${displayNum}. Arrange the scrambled letters correctly:</strong> <br>
             <span style="font-size:0.85em; color:#555; display:block; margin-bottom:5px;">Hint: ${q.hint}</span></p>
             
             <div id="scramble-target-${realIndex}" style="display: flex; gap: 8px; flex-wrap: wrap; min-height: 45px; padding: 10px; border: 2px dashed #e67e22; border-radius: 8px; background: #fffdf9; margin-bottom: 12px; align-items: center;">
-                <span style="color: #aaa; font-style: italic; font-size: 0.9em;" id="placeholder-${realIndex}">Click letters below to arrange...</span>
+                <span style="color: #aaa; font-style: italic; font-size: 0.9em;" id="placeholder-${realIndex}">Click letters/spaces below to arrange...</span>
             </div>
 
             <div id="scramble-pool-${realIndex}" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px;">
-                ${letterArray.map((letter) => `
-                    <span onclick="handleScrambleLetterClick(this, ${realIndex})" 
-                          data-letter="${letter}" 
-                          style="display: inline-flex; align-items: center; justify-content: center; width: 35px; height: 35px; font-size: 1.1em; font-weight: bold; color: #fff; background-color: #e67e22; border-radius: 6px; cursor: pointer; user-select: none; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: transform 0.1s;">${letter}</span>
-                `).join('')}
-            </div>
+             ${letterArray.map((letter) => {
+            const isSpace = letter === ' ';
+            const displayChar = isSpace ? 'space' : letter;
+            const bgColor = isSpace ? '#7f8c8d' : '#e67e22';
             
+            // Dynamically set width: 60px for spaces, 35px for letters
+            const blockWidth = isSpace ? '60px' : '35px';
+
+            return `
+                <span onclick="handleScrambleLetterClick(this, ${realIndex})" 
+                    data-letter="${letter}" 
+                    style="display: inline-flex; align-items: center; justify-content: center; width: ${blockWidth}; height: 35px; font-size: 1.1em; font-weight: bold; color: #fff; background-color: ${bgColor}; border-radius: 6px; cursor: pointer; user-select: none; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: transform 0.1s;">${displayChar}</span>
+            `;
+            }).join('')}
+             </div>
+                
             <input type="hidden" id="scramble-${realIndex}" value="">
             <div id="fb-${realIndex}" style="font-weight:bold; margin-top:5px; font-size:0.9em;"></div>`;
     }
@@ -351,6 +354,40 @@ function renderQuestionElement(q, realIndex, displayNum, shuffledDefs) {
         qDiv.innerHTML += `<div id="fb-${realIndex}" style="font-weight:bold; margin-top:5px;"></div>`;
     }
     return qDiv;
+}
+
+function stopDialogue() { 
+    isSpeaking = false; 
+    speechSynthesis.cancel(); 
+    dialogue.forEach((_, i) => {
+        const el = document.getElementById(`line-${i}`);
+        if(el) el.style.background = "none";
+    });
+}
+
+function speakLine() {
+    if (!isSpeaking || currentLine >= dialogue.length) {
+        isSpeaking = false;
+        return;
+    }
+    
+    const line = dialogue[currentLine];
+    const ut = new SpeechSynthesisUtterance(line.text);
+    const sel = document.getElementById(`voice-for-${line.speaker}`);
+    if (sel && voices[sel.value]) ut.voice = voices[sel.value];
+
+    dialogue.forEach((_, i) => {
+        const el = document.getElementById(`line-${i}`);
+        if(el) el.style.background = (i === currentLine) ? "#e3f2fd" : "none";
+    });
+
+    ut.onend = () => { 
+        if (isSpeaking) {
+            currentLine++; 
+            speakLine(); 
+        }
+    };
+    speechSynthesis.speak(ut);
 }
 
 function addSectionControls(container, idx) {
@@ -452,7 +489,7 @@ function resetSection(sIdx) {
     section.querySelectorAll('[id^="fb-"]').forEach(f => f.innerHTML="");
     section.querySelectorAll('[id^="label-q"]').forEach(l => l.style.background = "none");
     
-    // Custom structural reset processing for the interactive block workspace
+    // Custom structural reset processing for the interactive block workspace (Restoring baseline styling configurations)
     section.querySelectorAll('[id^="scramble-target-"]').forEach(target => {
         const realIndex = target.id.split('-').pop();
         const pool = section.querySelector(`#scramble-pool-${realIndex}`);
@@ -462,7 +499,14 @@ function resetSection(sIdx) {
         if (pool && hiddenInput) {
             const letters = target.querySelectorAll('span:not([id^="placeholder-"])');
             letters.forEach(letter => {
-                letter.style.backgroundColor = '#e67e22';
+                const isSpace = letter.getAttribute('data-letter') === ' ';
+                
+                // Fully reset visual structures back to their base pool styling profiles
+                letter.style.color = '#fff';
+                letter.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+                letter.style.border = 'none';
+                letter.style.backgroundColor = isSpace ? '#7f8c8d' : '#e67e22';
+                
                 pool.appendChild(letter);
             });
             hiddenInput.value = "";
