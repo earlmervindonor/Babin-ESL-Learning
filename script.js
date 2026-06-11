@@ -532,55 +532,90 @@ function resetSection(sIdx) {
 }
 
 
-// ================= 6. GOOGLE SHEETS NOTES FUNCTION =================
-const NOTES_API_URL = "https://script.google.com/macros/s/AKfycbzUjqLmVS0BitOmvONNOBkct1Fnp--Jp63cPhJQmjB_RQTLMVPQhmtBMhMI_zcGRtIv/exec";
+
+// ================= 6. TRUE REAL-TIME CRUD ENGINE =================
+const NOTES_API_URL = "https://script.google.com/macros/s/AKfycby_MqDQrvMtZBD4rxlvxBRq3v16V4ofU1fRcaUfpM-LCeol8q7byRuPewu933mK_PsP/exec";
 const noteArea = document.getElementById('sticky-notes');
 const saveStatus = document.getElementById('save-status');
 
+// A global window handler to catch Google's JSONP confirmation response bypasses CORS rules
+window.logCloudStatus = function(data) {
+    if (data && data.status === "success") {
+        if (saveStatus) saveStatus.innerText = "Synced with Spreadsheet ✅";
+    }
+    // Clean up our temporary script connection channel
+    document.getElementById('cloud-transport')?.remove();
+};
+
+// 1. READ (Fetches from Cell A1 automatically when the page opens)
 async function loadNoteFromSheet() {
-    if(!noteArea) return;
+    if (!noteArea) return;
     try {
-        const response = await fetch(NOTES_API_URL);
+        if (saveStatus) saveStatus.innerText = "Loading cloud notes...";
+        // Cache bust using Date.now() ensures Google doesn't send old text
+        const response = await fetch(`${NOTES_API_URL}?_cb=${Date.now()}`);
         const data = await response.text();
-        noteArea.value = data;
-        if(saveStatus) saveStatus.innerText = "Notes synced";
-    } catch (err) { console.error("Note load failed"); }
+        
+        // If the sheet returns our fallback error text or no data, keep text area clean
+        if (data === "No parameters found.") {
+            noteArea.value = "";
+        } else {
+            noteArea.value = data;
+        }
+        
+        if (saveStatus) saveStatus.innerText = "Notes synced";
+    } catch (err) { 
+        console.error("Load failed:", err); 
+        if (saveStatus) saveStatus.innerText = "Load error ❌";
+    }
 }
 
-async function saveNoteToSheet() {
-    if(!noteArea) return;
-    if(saveStatus) saveStatus.innerText = "Saving...";
-    try {
-        await fetch(NOTES_API_URL, {
-            method: "POST",
-            body: JSON.stringify({ action: "update", note: noteArea.value })
-        });
-        if(saveStatus) saveStatus.innerText = "Saved to Cloud ✅";
-    } catch (err) { if(saveStatus) saveStatus.innerText = "Sync Error ❌"; }
+// 2. UPDATE (Real-time Cloud Write to Cell A1)
+function saveNoteToSheet() {
+    if (!noteArea) return;
+    if (saveStatus) saveStatus.innerText = "Syncing to spreadsheet...";
+    
+    // Clear any previous transport elements out of the DOM 
+    document.getElementById('cloud-transport')?.remove();
+
+    // Dynamically inject a script tag to achieve a 100% CORS-proof background push
+    const script = document.createElement('script');
+    script.id = 'cloud-transport';
+    script.src = `${NOTES_API_URL}?action=update&note=${encodeURIComponent(noteArea.value)}&callback=logCloudStatus&_cb=${Date.now()}`;
+    document.body.appendChild(script);
 }
 
-async function deleteNoteFromSheet() {
-    if(!confirm("Clear all notes?")) return;
-    if(saveStatus) saveStatus.innerText = "Deleting...";
-    try {
-        await fetch(NOTES_API_URL, {
-            method: "POST",
-            body: JSON.stringify({ action: "delete" })
-        });
-        noteArea.value = "";
-        if(saveStatus) saveStatus.innerText = "Notes cleared";
-    } catch (err) { if(saveStatus) saveStatus.innerText = "Error"; }
+// 3. DELETE (Real-time Cloud Wipe of Cell A1)
+function deleteNoteFromSheet() {
+    if (!confirm("Wipe this note from the spreadsheet database?")) return;
+    if (saveStatus) saveStatus.innerText = "Clearing row...";
+    
+    document.getElementById('cloud-transport')?.remove();
+
+    const script = document.createElement('script');
+    script.id = 'cloud-transport';
+    script.src = `${NOTES_API_URL}?action=delete&callback=logCloudStatus&_cb=${Date.now()}`;
+    document.body.appendChild(script);
+    
+    noteArea.value = "";
 }
 
+// Attach action handlers to your exact index.html layout button IDs
 document.getElementById('save-note')?.addEventListener('click', saveNoteToSheet);
 document.getElementById('delete-note')?.addEventListener('click', deleteNoteFromSheet);
 
-let noteTimeout = null;
-noteArea?.addEventListener('keyup', () => {
-    clearTimeout(noteTimeout);
-    if(saveStatus) saveStatus.innerText = "Typing...";
-    noteTimeout = setTimeout(saveNoteToSheet, 2000);
+// True Real-Time CRUD Listener
+// This listens to EVERY SINGLE KEYSTROKE you input.
+// It waits exactly 400 milliseconds after you stop typing a character to save, preventing network spam.
+let typingTimer = null;
+noteArea?.addEventListener('input', () => {
+    if (saveStatus) saveStatus.innerText = "Typing...";
+    clearTimeout(typingTimer);
+    typingTimer = setTimeout(saveNoteToSheet, 400); 
 });
+
+// Run the data load function immediately when the browser finishes unpacking the layout
+window.addEventListener('DOMContentLoaded', loadNoteFromSheet);
 
 
 
