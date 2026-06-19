@@ -29,8 +29,10 @@ function getTargetUrl() {
         gid = "1750677535"; 
     }else if (pageName === "hospital-healthcare.html") { 
         gid = "124706539"; 
+    }else if (pageName === "hotels-airports.html") { 
+        gid = "1190919462"; 
     }
-
+    
     
     return `${BASE_CSV_URL}&gid=${gid}`;
 }
