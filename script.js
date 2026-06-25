@@ -31,6 +31,8 @@ function getTargetUrl() {
         gid = "124706539"; 
     }else if (pageName === "hotels-airports.html") { 
         gid = "1190919462"; 
+    }else if (pageName === "commuting-directions.html") { 
+        gid = "1576104761"; 
     }
     
     
