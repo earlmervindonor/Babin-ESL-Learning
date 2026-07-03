@@ -33,6 +33,8 @@ function getTargetUrl() {
         gid = "1190919462"; 
     }else if (pageName === "commuting-directions.html") { 
         gid = "1576104761"; 
+    }else if (pageName === "cafe.html") { 
+        gid = "273304741"; 
     }
     
     
