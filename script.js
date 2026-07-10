@@ -35,7 +35,10 @@ function getTargetUrl() {
         gid = "1576104761"; 
     }else if (pageName === "cafe.html") { 
         gid = "273304741"; 
+    }else if (pageName === "driving.html") { 
+        gid = "1605130673"; 
     }
+    
     
     
     return `${BASE_CSV_URL}&gid=${gid}`;
