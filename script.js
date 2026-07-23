@@ -39,6 +39,8 @@ function getTargetUrl() {
         gid = "1605130673"; 
     }else if (pageName === "managing-busy-schedule.html") { 
         gid = "765833607"; 
+    }else if (pageName === "zoo.html") { 
+        gid = "1525942912"; 
     }
     
     
